@@ -290,13 +290,6 @@ function renderFilters() {
   });
 }
 
-function selectAll(enabled) {
-  restaurantsList.forEach((r) => setFilter(r.name, enabled));
-  renderFilters();
-  renderMenus();
-  if (!menuLoading && (!menusCache || menusCache.length === 0)) loadMenus(currentType);
-}
-
 /* ===== FIRST VISIT ===== */
 
 function isFirstVisit() {
