@@ -640,6 +640,9 @@ function setDefaultFirstVisitState() {
 /* ===== RESTAURANTS LIST ===== */
 
 async function loadRestaurantsList() {
+  // Typový filtr se po načtení stránky vždy resetuje na "Všechny restaurace".
+  clearCategoryFilters();
+
   try {
     const resp = await fetch("/api/restaurants", { cache: "no-store" });
     const data = await resp.json();
