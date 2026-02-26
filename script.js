@@ -261,6 +261,90 @@ function normalizeMealForKcalQuery(name) {
     .slice(0, 120);
 }
 
+function buildUsdaQueryCandidates(mealName) {
+  const original = normalizeMealForKcalQuery(mealName);
+  if (!original) return [];
+
+  let q = ` ${original.toLowerCase()} `;
+
+  const phraseReplacements = [
+    [/kuřecí\s+vývar/g, " chicken broth soup "],
+    [/hovězí\s+vývar/g, " beef broth soup "],
+    [/zeleninov[ýá]\s+vývar/g, " vegetable broth soup "],
+    [/rajsk[áa]|tomatov[áa]/g, " tomato "],
+    [/pol[ée]vka/g, " soup "],
+    [/kr[eé]m\b/g, " cream soup "],
+    [/řízek|rizek/g, " schnitzel "],
+    [/smažen[ýaé]/g, " fried "],
+    [/kuřec[íi]/g, " chicken "],
+    [/vepřov[éeí]/g, " pork "],
+    [/hověz[íi]/g, " beef "],
+    [/krůt[íi]/g, " turkey "],
+    [/losos/g, " salmon "],
+    [/sýr/g, " cheese "],
+    [/bramborov[áaéý]/g, " potato "],
+    [/brambor/g, " potato "],
+    [/kaš[ei]/g, " mash "],
+    [/rýže/g, " rice "],
+    [/hranolky/g, " french fries "],
+    [/těstoviny/g, " pasta "],
+    [/gnocchi/g, " gnocchi "],
+    [/guláš/g, " goulash "],
+    [/svíčková/g, " sirloin cream sauce "],
+    [/sekaná/g, " meatloaf "],
+    [/salát|salátek/g, " salad "],
+    [/cous\s*cous/g, " couscous "],
+    [/čočk[ay]/g, " lentils "],
+    [/fazolov[áa]/g, " bean "],
+    [/cizrnov[áa]/g, " chickpea "],
+    [/špenát/g, " spinach "],
+    [/brokolice/g, " broccoli "],
+    [/květák/g, " cauliflower "],
+    [/smetanov[áaé]/g, " cream "],
+    [/omáčk[ayou]/g, " sauce "],
+    [/knedl[ií]k/g, " dumplings "],
+    [/pečen[ýaé]/g, " roasted "],
+    [/grilovan[ýaé]/g, " grilled "],
+    [/pizza/g, " pizza "],
+    [/burger/g, " burger "],
+  ];
+
+  for (const [re, rep] of phraseReplacements) {
+    q = q.replace(re, rep);
+  }
+
+  q = q
+    .replace(/[()]/g, " ")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\b(s|se|na|v|ve|u|a|z|do|od)\b/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const generic = q
+    .replace(/\b(menu|daily|lunch)\b/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 100);
+
+  const candidates = [];
+  const add = (x) => {
+    const v = String(x || "").trim();
+    if (!v) return;
+    if (!candidates.includes(v)) candidates.push(v);
+  };
+
+  add(generic);
+  add(generic + " dish");
+  add(original); // fallback na původní CZ název
+
+  // Kratší fallback jen prvních pár slov (často pomůže USDA search)
+  const words = generic.split(/\s+/).filter(Boolean);
+  if (words.length > 2) add(words.slice(0, 2).join(" "));
+  if (words.length > 3) add(words.slice(0, 3).join(" "));
+
+  return candidates.slice(0, 5);
+}
+
 function parsePortionEstimate(mealName) {
   const raw = String(mealName || "");
   const s = raw.toLowerCase();
@@ -318,48 +402,58 @@ function formatKcalEstimateText(mealName, kcalPer100g) {
   return ` • přibl. ${portionKcal} kcal / porce (~${grams} g)`;
 }
 
-async function fetchApproxKcal(query) {
-  const q = normalizeMealForKcalQuery(query);
-  if (!q) return null;
+async function fetchApproxKcal(mealName) {
+  const mealKey = normalizeMealForKcalQuery(mealName);
+  if (!mealKey) return null;
 
-  if (kcalCache.has(q)) return kcalCache.get(q);
-  if (kcalPending.has(q)) return kcalPending.get(q);
+  if (kcalCache.has(mealKey)) return kcalCache.get(mealKey);
+  if (kcalPending.has(mealKey)) return kcalPending.get(mealKey);
+
+  const candidates = buildUsdaQueryCandidates(mealName);
+  if (!candidates.length) return null;
 
   const p = (async () => {
     try {
-      const resp = await fetch("/api/usda?query=" + encodeURIComponent(q), { cache: "no-store" });
-      if (!resp.ok) throw new Error("USDA API");
-      const data = await resp.json();
-      const kcal = typeof data?.kcal === "number" ? data.kcal : null;
-      kcalCache.set(q, kcal);
-      return kcal;
+      for (const q of candidates) {
+        const resp = await fetch("/api/usda?query=" + encodeURIComponent(q), { cache: "no-store" });
+        if (!resp.ok) continue;
+        const data = await resp.json().catch(() => ({}));
+        const kcal = typeof data?.kcal === "number" ? data.kcal : null;
+        if (typeof kcal === "number") {
+          kcalCache.set(mealKey, kcal);
+          return kcal;
+        }
+      }
+
+      kcalCache.set(mealKey, null);
+      return null;
     } catch {
-      kcalCache.set(q, null);
+      kcalCache.set(mealKey, null);
       return null;
     } finally {
-      kcalPending.delete(q);
+      kcalPending.delete(mealKey);
     }
   })();
 
-  kcalPending.set(q, p);
+  kcalPending.set(mealKey, p);
   return p;
 }
 
 function scheduleKcalEstimate(el, mealName) {
   if (!el || !mealName) return;
-  const q = normalizeMealForKcalQuery(mealName);
-  if (!q) return;
+  const mealKey = normalizeMealForKcalQuery(mealName);
+  if (!mealKey) return;
 
   // okamžitě z cache
-  if (kcalCache.has(q)) {
-    const kcal = kcalCache.get(q);
+  if (kcalCache.has(mealKey)) {
+    const kcal = kcalCache.get(mealKey);
     el.textContent = formatKcalEstimateText(mealName, kcal);
     return;
   }
 
   el.textContent = " • odhad kcal…";
 
-  fetchApproxKcal(q).then((kcal) => {
+  fetchApproxKcal(mealName).then((kcal) => {
     if (!document.body.contains(el)) return;
     el.textContent = formatKcalEstimateText(mealName, kcal);
   });
