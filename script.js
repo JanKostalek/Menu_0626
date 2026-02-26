@@ -5,7 +5,6 @@ let menuLoading = false;
 let menuError = "";
 
 const COOKIE_FILTERS = "menu03_filters";
-const COOKIE_VISITED = "menu03_visited";
 
 const LS_MENU_CACHE_TODAY = "menu03_menu_cache_today";
 const LS_MENU_CACHE_ALL = "menu03_menu_cache_all";
@@ -239,8 +238,15 @@ function saveFilters(filters) {
 }
 
 function setFilter(name, enabled) {
-  const filters = loadFilters();
-  filters[String(name).toLowerCase()] = !!enabled;
+  const filters = {};
+  const key = String(name).toLowerCase();
+
+  if (enabled) {
+    filters[key] = true;
+  } else {
+    filters[key] = false;
+  }
+
   saveFilters(filters);
 }
 
@@ -290,16 +296,6 @@ function renderFilters() {
   });
 }
 
-/* ===== FIRST VISIT ===== */
-
-function isFirstVisit() {
-  return getCookie(COOKIE_VISITED) !== "1";
-}
-
-function markVisited() {
-  setCookie(COOKIE_VISITED, "1", 365);
-}
-
 function setDefaultFirstVisitState() {
   const f = {};
   restaurantsList.forEach(r => { if (r?.name) f[String(r.name).toLowerCase()] = false; });
@@ -337,12 +333,8 @@ async function loadRestaurantsList() {
     }
   } catch {}
 
-  if (isFirstVisit()) {
-    setDefaultFirstVisitState();
-    markVisited();
-  } else {
-    if (getCookie(COOKIE_FILTERS) === null) saveFilters({});
-  }
+  // Po otevření stránky začíná bez vybrané restaurace.
+  setDefaultFirstVisitState();
 
   renderFilters();
 }
