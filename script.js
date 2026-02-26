@@ -618,7 +618,7 @@ function loadAll() { return loadMenus("all"); }
 function renderEmptySelectionState(container) {
   container.innerHTML = `
     <div class="empty-state">
-      <div class="empty-state__title">Máš hlad? Máš na něco chuť? Tak si pojd něco vybrat.</div>
+      <div class="empty-state__title">Máš hlad? Máš na něco chuť? Tak si pojď něco vybrat.</div>
       <div class="empty-state__subtitle">Pokud tu nevidíš svoji oblíbenou restauraci, pověz nám o ni pomocí tlačítka nahoře.</div>
     </div>
   `;

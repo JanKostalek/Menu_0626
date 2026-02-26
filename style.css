@@ -67,6 +67,8 @@ body {
 
 .empty-state {
   min-height: calc(100vh - 220px);
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -74,6 +76,25 @@ body {
   text-align: center;
   color: #333;
   padding: 20px;
+  isolation: isolate;
+}
+
+.empty-state::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("./empty-state-bg.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.15; /* 85% průhledné */
+  z-index: 0;
+  pointer-events: none;
+}
+
+.empty-state > * {
+  position: relative;
+  z-index: 1;
 }
 
 .empty-state__title {
