@@ -133,7 +133,9 @@ body {
 }
 
 .filter-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
@@ -142,6 +144,18 @@ body {
   background: #ffffff;
   cursor: pointer;
   text-align: left;
+}
+
+.filter-btn__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 22px;
+  opacity: 0.9;
+}
+
+.filter-btn__label {
+  min-width: 0;
 }
 
 .filter-btn:hover {

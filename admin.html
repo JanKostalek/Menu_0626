@@ -80,6 +80,13 @@
       background: #b9e4b9;
       border-color: #7ac77a;
     }
+    .catSelect{
+      padding: 4px 8px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 12px;
+    }
 
     .actionsRight{ display:flex; gap: 0px; align-items:center; }
     .moveBtns{ display:flex; flex-direction:column; gap:6px; margin-right:8px; }
@@ -125,6 +132,14 @@
     <select id="mode">
       <option value="parse" selected>Parsovat HTML (zkusit vyčíst jídla a ceny)</option>
       <option value="embed">Zobrazit zdroj (iframe/popup) – bez parsování</option>
+    </select>
+    <select id="category">
+      <option value="ceska" selected>Česká</option>
+      <option value="cina">Čína</option>
+      <option value="italska">Italská</option>
+      <option value="mexicka">Mexická</option>
+      <option value="burger">Burger</option>
+      <option value="kavarna">Kavárna</option>
     </select>
   </div>
   <div class="row">
@@ -174,9 +189,31 @@ const LS_RESTAURANTS_SIG = "menu03_restaurants_sig";
 
 const pendingModeById = new Map();
 const currentModeById = new Map();
+const pendingCategoryById = new Map();
+const currentCategoryById = new Map();
 let restaurantsCache = [];
 let currentOrderIds = [];
 let pendingOrderIds = null;
+
+const CATEGORY_OPTIONS = [
+  ["ceska", "Česká"],
+  ["cina", "Čína"],
+  ["italska", "Italská"],
+  ["mexicka", "Mexická"],
+  ["burger", "Burger"],
+  ["kavarna", "Kavárna"],
+];
+
+function normalizeCategory(v) {
+  const x = String(v || "").toLowerCase();
+  return CATEGORY_OPTIONS.some(([key]) => key === x) ? x : "ceska";
+}
+
+function categoryLabel(v) {
+  const key = normalizeCategory(v);
+  const found = CATEGORY_OPTIONS.find(([k]) => k === key);
+  return found ? found[1] : "Česká";
+}
 
 function setStatus(msg, isOk=false) {
   statusEl.textContent = msg || "";
@@ -188,7 +225,7 @@ function setRecacheStatus(msg) {
 }
 
 function updateSaveModesButton() {
-  const count = pendingModeById.size + (pendingOrderIds ? 1 : 0);
+  const count = pendingModeById.size + pendingCategoryById.size + (pendingOrderIds ? 1 : 0);
   if (saveModesBtnEl) {
     saveModesBtnEl.textContent = `Uložit změny (${count})`;
     saveModesBtnEl.disabled = count === 0;
@@ -203,7 +240,7 @@ function updateSaveModesButton() {
 }
 
 function hasPendingChanges() {
-  return pendingModeById.size > 0 || !!pendingOrderIds;
+  return pendingModeById.size > 0 || pendingCategoryById.size > 0 || !!pendingOrderIds;
 }
 
 function getDisplayRestaurants(baseList) {
@@ -253,10 +290,17 @@ function renderRestaurants(restaurants) {
   const html = displayRestaurants.map((r, idx) => {
     const currentMode = normalizeMode(r.mode);
     const pending = pendingModeById.has(r.id) ? pendingModeById.get(r.id) : currentMode;
+    const currentCategory = normalizeCategory(r.category);
+    const pendingCategory = pendingCategoryById.has(r.id) ? pendingCategoryById.get(r.id) : currentCategory;
     const orderChanged = !!pendingOrderIds;
 
     const parseActive = pending === "parse" ? "active" : "";
     const embedActive = pending === "embed" ? "active" : "";
+    const categoryOptionsHtml = CATEGORY_OPTIONS.map(([key, label]) =>
+      `<option value="${key}" ${pendingCategory === key ? "selected" : ""}>${escapeHtml(label)}</option>`
+    ).join("");
+    const modeChanged = pending !== currentMode;
+    const categoryChanged = pendingCategory !== currentCategory;
 
     return `
       <div class="list-item">
@@ -264,6 +308,7 @@ function renderRestaurants(restaurants) {
           <div>
             <b>${escapeHtml(r.name)}</b>
             <span class="pill">${escapeHtml(currentMode)}</span>
+            <span class="pill">${escapeHtml(categoryLabel(currentCategory))}</span>
           </div>
 
           <div class="muted">${escapeHtml(r.url)}</div>
@@ -272,9 +317,13 @@ function renderRestaurants(restaurants) {
             <span class="muted">Mode:</span>
             <button class="modeBtn ${parseActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','parse')">Parse</button>
             <button class="modeBtn ${embedActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','embed')">Embed</button>
+            <span class="muted">Typ:</span>
+            <select class="catSelect" onchange="pickCategory('${escapeHtmlAttr(r.id)}', this.value)">
+              ${categoryOptionsHtml}
+            </select>
             ${
-              pending !== currentMode
-                ? `<span class="muted modeHintChanged">Změna režimu připravena</span>`
+              (modeChanged || categoryChanged)
+                ? `<span class="muted modeHintChanged">${modeChanged && categoryChanged ? "Změna režimu + typu připravena" : (modeChanged ? "Změna režimu připravena" : "Změna typu připravena")}</span>`
                 : (orderChanged ? `<span class="muted">Pořadí změněno</span>` : `<span class="muted">Beze změny</span>`)
             }
           </div>
@@ -329,7 +378,9 @@ async function loadRestaurants() {
     restaurantsCache = Array.isArray(restaurants) ? restaurants : [];
 
     currentModeById.clear();
+    currentCategoryById.clear();
     restaurantsCache.forEach((r) => currentModeById.set(r.id, normalizeMode(r.mode)));
+    restaurantsCache.forEach((r) => currentCategoryById.set(r.id, normalizeCategory(r.category)));
 
     currentOrderIds = restaurantsCache.map((r) => r.id);
 
@@ -343,6 +394,9 @@ async function loadRestaurants() {
     const ids = new Set(restaurantsCache.map(r => r.id));
     for (const k of Array.from(pendingModeById.keys())) {
       if (!ids.has(k)) pendingModeById.delete(k);
+    }
+    for (const k of Array.from(pendingCategoryById.keys())) {
+      if (!ids.has(k)) pendingCategoryById.delete(k);
     }
 
     renderRestaurants(restaurantsCache);
@@ -369,6 +423,17 @@ function pickMode(id, mode) {
 
   if (currentMode && currentMode === nextMode) pendingModeById.delete(id);
   else pendingModeById.set(id, nextMode);
+
+  updateSaveModesButton();
+  renderRestaurants(restaurantsCache);
+}
+
+function pickCategory(id, category) {
+  const next = normalizeCategory(category);
+  const current = currentCategoryById.get(id);
+
+  if (current && current === next) pendingCategoryById.delete(id);
+  else pendingCategoryById.set(id, next);
 
   updateSaveModesButton();
   renderRestaurants(restaurantsCache);
@@ -407,6 +472,7 @@ function resetAllModeChanges() {
   }
 
   pendingModeById.clear();
+  pendingCategoryById.clear();
   pendingOrderIds = null;
   setStatus("Neuložené změny byly zrušeny.");
   updateSaveModesButton();
@@ -415,14 +481,15 @@ function resetAllModeChanges() {
 
 async function saveAllModeChanges() {
   const entries = Array.from(pendingModeById.entries());
+  const categoryEntries = Array.from(pendingCategoryById.entries());
   const hasOrderChange = !!pendingOrderIds;
-  if (!entries.length && !hasOrderChange) {
+  if (!entries.length && !categoryEntries.length && !hasOrderChange) {
     setStatus("Není co uložit.");
     updateSaveModesButton();
     return;
   }
 
-  const totalChanges = entries.length + (hasOrderChange ? 1 : 0);
+  const totalChanges = entries.length + categoryEntries.length + (hasOrderChange ? 1 : 0);
   setStatus(`Ukládám ${totalChanges} změn(y)…`);
 
   let okCount = 0;
@@ -443,6 +510,27 @@ async function saveAllModeChanges() {
       }
 
       pendingModeById.delete(id);
+      okCount++;
+    } catch (e) {
+      if (!firstError) firstError = String(e?.message || e);
+    }
+  }
+
+  for (const [id, category] of categoryEntries) {
+    try {
+      const resp = await fetch("/api/restaurants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", id, category })
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (!firstError) firstError = data.error || String(resp.status);
+        continue;
+      }
+
+      pendingCategoryById.delete(id);
       okCount++;
     } catch (e) {
       if (!firstError) firstError = String(e?.message || e);
@@ -485,6 +573,7 @@ async function addRestaurant() {
   const name = document.getElementById("name").value.trim();
   const url = document.getElementById("url").value.trim();
   const mode = document.getElementById("mode").value;
+  const category = document.getElementById("category").value;
 
   if (!name || !url) {
     alert("Vyplň název i URL.");
@@ -495,7 +584,7 @@ async function addRestaurant() {
   const resp = await fetch("/api/restaurants", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, url, mode })
+    body: JSON.stringify({ name, url, mode, category })
   });
 
   const data = await resp.json().catch(() => ({}));
@@ -507,6 +596,7 @@ async function addRestaurant() {
   document.getElementById("name").value = "";
   document.getElementById("url").value = "";
   document.getElementById("mode").value = "parse";
+  document.getElementById("category").value = "ceska";
 
   setStatus("Uloženo ✅ (cache invalidována automaticky)", true);
 
@@ -527,6 +617,7 @@ async function deleteRestaurant(id, name) {
   setStatus("Smazáno ✅ (cache invalidována automaticky)", true);
 
   pendingModeById.delete(id);
+  pendingCategoryById.delete(id);
   if (pendingOrderIds) pendingOrderIds = pendingOrderIds.filter((x) => x !== id);
   updateSaveModesButton();
   clearLocalCacheOnly();

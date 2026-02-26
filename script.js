@@ -22,6 +22,15 @@ const EMBED_BLOCKED_DOMAINS = [
   "holidayinn.cz",
 ];
 
+const RESTAURANT_CATEGORY_META = {
+  ceska: { label: "Česká", icon: "/icons/ceska.png" },
+  cina: { label: "Čína", icon: "/icons/cina.png" },
+  italska: { label: "Italská", icon: "/icons/italska.png" },
+  mexicka: { label: "Mexická", icon: "/icons/mexicka.png" },
+  burger: { label: "Burger", icon: "/icons/burger.png" },
+  kavarna: { label: "Kavárna", icon: "/icons/kavarna.png" },
+};
+
 /* ===== COOKIES HELPERS ===== */
 
 function setCookie(name, value, days = 365) {
@@ -122,13 +131,19 @@ function clearLocalMenuCache() {
   } catch {}
 }
 
+function normalizeRestaurantCategory(category) {
+  const c = String(category || "").toLowerCase();
+  return RESTAURANT_CATEGORY_META[c] ? c : "ceska";
+}
+
 function computeRestaurantsSig(list) {
   try {
     const slim = (list || []).map(r => ({
       id: r.id || "",
       name: r.name || "",
       url: r.url || "",
-      mode: (r.mode || "parse")
+      mode: (r.mode || "parse"),
+      category: normalizeRestaurantCategory(r.category),
     }));
     return JSON.stringify(slim);
   } catch {
@@ -484,7 +499,12 @@ function renderFilters() {
   const html = restaurantsList.map((r) => {
     const enabled = isEnabledByFilter(r.name);
     const cls = enabled ? "filter-btn active-green" : "filter-btn";
-    return `<button type="button" class="${cls}" data-name="${escapeHtmlAttr(r.name)}">${escapeHtml(r.name)}</button>`;
+    const category = normalizeRestaurantCategory(r.category);
+    const iconSrc = RESTAURANT_CATEGORY_META[category]?.icon || "";
+    const iconHtml = iconSrc
+      ? `<img class="filter-btn__icon" src="${escapeHtmlAttr(iconSrc)}" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'" />`
+      : "";
+    return `<button type="button" class="${cls}" data-name="${escapeHtmlAttr(r.name)}">${iconHtml}<span class="filter-btn__label">${escapeHtml(r.name)}</span></button>`;
   }).join("");
 
   container.innerHTML = html;

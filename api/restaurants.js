@@ -23,6 +23,12 @@ function normalizeMode(mode) {
   return "parse";
 }
 
+function normalizeCategory(category) {
+  const c = String(category || "").trim().toLowerCase();
+  const allowed = new Set(["cina", "italska", "mexicka", "ceska", "burger", "kavarna"]);
+  return allowed.has(c) ? c : "ceska";
+}
+
 function normalizeRestaurant(r) {
   if (!r) return null;
   const name = String(r.name || "").trim();
@@ -30,7 +36,8 @@ function normalizeRestaurant(r) {
   if (!name || !url) return null;
 
   const mode = normalizeMode(r.mode);
-  return { id: r.id || makeId(), name, url, mode };
+  const category = normalizeCategory(r.category);
+  return { id: r.id || makeId(), name, url, mode, category };
 }
 
 async function readList() {
@@ -58,7 +65,7 @@ async function writeList(list) {
   await kv.set("menus:cacheBuster", now);
 }
 
-function applyUpdate(list, { id, mode, name, url }) {
+function applyUpdate(list, { id, mode, name, url, category }) {
   if (!id) return { ok: false, status: 400, error: "Chybí id" };
 
   const idx = list.findIndex((r) => r.id === id);
@@ -71,6 +78,7 @@ function applyUpdate(list, { id, mode, name, url }) {
     ...(typeof name === "string" ? { name: name.trim() } : {}),
     ...(typeof url === "string" ? { url: url.trim() } : {}),
     ...(mode ? { mode: normalizeMode(mode) } : {}),
+    ...(category ? { category: normalizeCategory(category) } : {}),
   };
 
   if (!updated.name || !updated.url) {
@@ -138,7 +146,7 @@ export default async function handler(req, res) {
     }
 
     // ADD (původní chování)
-    const { name, url, mode } = body;
+    const { name, url, mode, category } = body;
     if (!name || !url) return res.status(400).json({ error: "Chybí name nebo url" });
 
     const list = await readList();
@@ -149,6 +157,7 @@ export default async function handler(req, res) {
         name: String(name).trim(),
         url: String(url).trim(),
         mode: normalizeMode(mode),
+        category: normalizeCategory(category),
       },
     ];
 
