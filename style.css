@@ -65,7 +65,12 @@ body {
 
 .top-bar .type-filter-btn:hover,
 .top-bar .type-filter-btn.active:hover {
-  background: inherit;
+  background: #e6e6e6;
+}
+
+.top-bar .type-filter-btn.active:hover {
+  background: #b9e4b9;
+  border-color: #7ac77a;
 }
 
 .type-filter-btn__icon {
