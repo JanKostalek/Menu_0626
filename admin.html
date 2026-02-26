@@ -96,6 +96,7 @@
   <div class="rightTop">
     <div class="rightTopButtons">
       <button id="saveModesBtn" class="btn" onclick="saveAllModeChanges()">Uložit změny (0)</button>
+      <button id="resetModesBtn" class="btn" onclick="resetAllModeChanges()">Zrušit změny</button>
       <button class="btn" onclick="reCacheAll()">ReCache</button>
     </div>
     <div id="recacheStatus" class="recache-status"></div>
@@ -149,6 +150,7 @@ const listEl = document.getElementById("list");
 const suggestionsEl = document.getElementById("suggestions");
 const recacheStatusEl = document.getElementById("recacheStatus");
 const saveModesBtnEl = document.getElementById("saveModesBtn");
+const resetModesBtnEl = document.getElementById("resetModesBtn");
 
 const LS_MENU_CACHE_TODAY = "menu03_menu_cache_today";
 const LS_MENU_CACHE_ALL = "menu03_menu_cache_all";
@@ -175,6 +177,11 @@ function updateSaveModesButton() {
     saveModesBtnEl.disabled = count === 0;
     saveModesBtnEl.style.opacity = count === 0 ? "0.6" : "1";
     saveModesBtnEl.style.cursor = count === 0 ? "default" : "pointer";
+  }
+  if (resetModesBtnEl) {
+    resetModesBtnEl.disabled = count === 0;
+    resetModesBtnEl.style.opacity = count === 0 ? "0.6" : "1";
+    resetModesBtnEl.style.cursor = count === 0 ? "default" : "pointer";
   }
 }
 
@@ -312,6 +319,19 @@ function pickMode(id, mode) {
   if (currentMode && currentMode === nextMode) pendingModeById.delete(id);
   else pendingModeById.set(id, nextMode);
 
+  updateSaveModesButton();
+  loadRestaurants();
+}
+
+function resetAllModeChanges() {
+  if (!pendingModeById.size) {
+    setStatus("Není co vrátit.");
+    updateSaveModesButton();
+    return;
+  }
+
+  pendingModeById.clear();
+  setStatus("Neuložené změny byly zrušeny.");
   updateSaveModesButton();
   loadRestaurants();
 }
