@@ -3,6 +3,8 @@ let menusCache = [];
 let currentType = "today";
 let menuLoading = false;
 let menuError = "";
+const kcalCache = new Map();
+const kcalPending = new Map();
 
 const COOKIE_FILTERS = "menu03_filters";
 
@@ -250,6 +252,119 @@ function setFilter(name, enabled) {
   saveFilters(filters);
 }
 
+function normalizeMealForKcalQuery(name) {
+  return String(name || "")
+    .replace(/\b\d+[.,]?\d*\s*(g|kg|ml|l)\b/gi, " ")
+    .replace(/\b\d+\s*x\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+function parsePortionEstimate(mealName) {
+  const raw = String(mealName || "");
+  const s = raw.toLowerCase();
+
+  const isSoup = /pol[eé]v|v[ýy]var|kr[eé]m|minestrone|dr[šs]tkov|bor[šs]č|kulajd|gul[aá]šov[aá]\s+pol/i.test(s);
+  const isSalad = /sal[aá]t|caesar|poke|bowl/i.test(s);
+  const isDessert = /palačink|l[íi]vanc|buchti|škub[aá]nk|kaše s m[aá]kem|dezert/i.test(s);
+  const isPizza = /pizza/i.test(s);
+
+  // "0,3l", "0, 3l", "300 ml"
+  const volMatch = raw.match(/(\d+(?:\s*[,\.]\s*\d+)?)\s*(ml|l)\b/i);
+  if (volMatch) {
+    const num = Number(String(volMatch[1]).replace(/\s+/g, "").replace(",", "."));
+    const unit = volMatch[2].toLowerCase();
+    if (Number.isFinite(num) && num > 0) {
+      const ml = unit === "l" ? Math.round(num * 1000) : Math.round(num);
+      return { grams: ml, source: "explicit-volume" };
+    }
+  }
+
+  // "120g", "250 g", "1 kg"
+  const gramMatch = raw.match(/(\d+(?:\s*[,\.]\s*\d+)?)\s*(g|kg)\b/i);
+  if (gramMatch) {
+    const num = Number(String(gramMatch[1]).replace(/\s+/g, "").replace(",", "."));
+    const unit = gramMatch[2].toLowerCase();
+    if (Number.isFinite(num) && num > 0) {
+      const grams = unit === "kg" ? Math.round(num * 1000) : Math.round(num);
+
+      // U hlavních jídel bývá uvedená jen gramáž masa (např. 120g), přílohu dopočítáme.
+      if (!isSoup && grams >= 80 && grams <= 220) {
+        const side = isSalad ? 120 : 250;
+        return { grams: grams + side, source: "explicit-protein-plus-side" };
+      }
+      return { grams, source: "explicit-grams" };
+    }
+  }
+
+  if (isSoup) return { grams: 330, source: "heuristic-soup" };
+  if (isSalad) return { grams: 320, source: "heuristic-salad" };
+  if (isDessert) return { grams: 250, source: "heuristic-dessert" };
+  if (isPizza) return { grams: 450, source: "heuristic-pizza" };
+  return { grams: 420, source: "heuristic-main" };
+}
+
+function formatKcalEstimateText(mealName, kcalPer100g) {
+  if (typeof kcalPer100g !== "number") return " • kcal odhad nedostupný";
+
+  const portion = parsePortionEstimate(mealName);
+  const grams = portion?.grams;
+  if (!grams || !Number.isFinite(grams) || grams <= 0) {
+    return ` • přibl. ${kcalPer100g} kcal / 100 g`;
+  }
+
+  const portionKcal = Math.round((kcalPer100g * grams) / 100);
+  return ` • přibl. ${portionKcal} kcal / porce (~${grams} g)`;
+}
+
+async function fetchApproxKcal(query) {
+  const q = normalizeMealForKcalQuery(query);
+  if (!q) return null;
+
+  if (kcalCache.has(q)) return kcalCache.get(q);
+  if (kcalPending.has(q)) return kcalPending.get(q);
+
+  const p = (async () => {
+    try {
+      const resp = await fetch("/api/usda?query=" + encodeURIComponent(q), { cache: "no-store" });
+      if (!resp.ok) throw new Error("USDA API");
+      const data = await resp.json();
+      const kcal = typeof data?.kcal === "number" ? data.kcal : null;
+      kcalCache.set(q, kcal);
+      return kcal;
+    } catch {
+      kcalCache.set(q, null);
+      return null;
+    } finally {
+      kcalPending.delete(q);
+    }
+  })();
+
+  kcalPending.set(q, p);
+  return p;
+}
+
+function scheduleKcalEstimate(el, mealName) {
+  if (!el || !mealName) return;
+  const q = normalizeMealForKcalQuery(mealName);
+  if (!q) return;
+
+  // okamžitě z cache
+  if (kcalCache.has(q)) {
+    const kcal = kcalCache.get(q);
+    el.textContent = formatKcalEstimateText(mealName, kcal);
+    return;
+  }
+
+  el.textContent = " • odhad kcal…";
+
+  fetchApproxKcal(q).then((kcal) => {
+    if (!document.body.contains(el)) return;
+    el.textContent = formatKcalEstimateText(mealName, kcal);
+  });
+}
+
 function isEnabledByFilter(name) {
   const filters = loadFilters();
   const key = String(name).toLowerCase();
@@ -468,11 +583,14 @@ function renderMenus() {
         mealDiv.className = "meal";
         const price = m.price ? `${m.price} Kč` : "—";
         const day = m.day ? `(${m.day})` : "";
+        const kcalId = `kcal-${Math.random().toString(36).slice(2, 10)}`;
         mealDiv.innerHTML = `
           <div><b>${escapeHtml(m.name)}</b> ${escapeHtml(day)}</div>
-          <div>💰 ${escapeHtml(price)}</div>
+          <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span></div>
           <hr>
         `;
+        const kcalEl = mealDiv.querySelector(`#${kcalId}`);
+        scheduleKcalEstimate(kcalEl, m.name);
         div.appendChild(mealDiv);
       });
     }
