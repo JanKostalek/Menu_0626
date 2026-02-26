@@ -493,12 +493,12 @@ function renderMenus() {
 
 function openSuggestion() {
   // bezpečné (neblokuje popup blocker)
-  window.location.href = "/suggest.html";
+  openPopup("/suggest.html");
 }
 
 function openAdmin() {
   // Heslo se řeší až v admin.html (ať se to neptá 2×)
-  window.location.href = "/admin.html";
+  openPopup("/admin.html");
 }
 
 /* ===== ESCAPE ===== */
