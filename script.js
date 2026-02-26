@@ -406,6 +406,15 @@ function loadAll() { return loadMenus("all"); }
 
 /* ===== RENDER ===== */
 
+function renderEmptySelectionState(container) {
+  container.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state__title">Máš hlad? Máš na něco chuť? Tak si pojd něco vybrat.</div>
+      <div class="empty-state__subtitle">Pokud tu nevidíš svoji oblíbenou restauraci, pověz nám o ni pomocí tlačítka nahoře.</div>
+    </div>
+  `;
+}
+
 function renderMenus() {
   const container = document.getElementById("menuContainer");
   if (!container) return;
@@ -423,14 +432,18 @@ function renderMenus() {
   }
 
   if (!menusCache || menusCache.length === 0) {
-    container.innerHTML = `<div class="restaurant"><div class="small-muted">${hasAnySelected() ? "Menu se nepodařilo načíst. Zkus obnovit stránku." : "Vyber restauraci vlevo."}</div></div>`;
+    if (hasAnySelected()) {
+      container.innerHTML = `<div class="restaurant"><div class="small-muted">Menu se nepodařilo načíst. Zkus obnovit stránku.</div></div>`;
+    } else {
+      renderEmptySelectionState(container);
+    }
     return;
   }
 
   const filtered = menusCache.filter(r => isEnabledByFilter(r.name));
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="restaurant"><div class="small-muted">Vyber restauraci vlevo.</div></div>`;
+    renderEmptySelectionState(container);
     return;
   }
 
