@@ -41,6 +41,27 @@ function isMenickaPrintUrl(url) {
   }
 }
 
+function isSalandaUrl(url) {
+  try {
+    const u = new URL(String(url || ""));
+    return u.hostname.includes("restauracesalanda.cz");
+  } catch {
+    return false;
+  }
+}
+
+function czWeekdayToIndex(label) {
+  const s = String(label || "").toLowerCase();
+  if (s.includes("pond")) return 1;
+  if (s.includes("úter") || s.includes("uter")) return 2;
+  if (s.includes("střed") || s.includes("stred")) return 3;
+  if (s.includes("čtvr") || s.includes("ctvr")) return 4;
+  if (s.includes("pátek") || s.includes("patek")) return 5;
+  if (s.includes("sobot")) return 6;
+  if (s.includes("neděl") || s.includes("nedel")) return 0;
+  return null;
+}
+
 function parseCzHeadingDateToIso(text) {
   const m = String(text || "").match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
   if (!m) return null;
@@ -83,6 +104,71 @@ function extractMealsMenickaPrint(html, type) {
     const t = todayISO();
     const onlyToday = sections.filter((s) => s.dayIso === t);
     if (onlyToday.length) selected = onlyToday;
+  }
+
+  return selected.flatMap((s) => s.meals).slice(0, 200);
+}
+
+function extractMealsSalanda(html, type) {
+  const $ = loadHtml(html);
+
+  const labelByCollapseId = new Map();
+  let activeCollapseId = null;
+
+  $(".daily-menu-days button[data-bs-target]").each((_, btn) => {
+    const target = String($(btn).attr("data-bs-target") || "").trim(); // #collapse1
+    const id = target.replace(/^#/, "");
+    if (!id) return;
+
+    const label = cleanText($(btn).text());
+    if (!label) return;
+
+    labelByCollapseId.set(id, label);
+    if ($(btn).hasClass("activeButton")) activeCollapseId = id;
+  });
+
+  const sections = [];
+
+  $("#priceTable > div[id^='collapse']").each((_, sec) => {
+    const id = String($(sec).attr("id") || "").trim();
+    if (!id) return;
+
+    const dayLabel = labelByCollapseId.get(id) || null;
+    const dayIndex = czWeekdayToIndex(dayLabel);
+    const meals = [];
+
+    $(sec).find("table tr").each((__, tr) => {
+      const tds = $(tr).find("td");
+      if (tds.length < 2) return;
+
+      const left = tds.eq(0).clone();
+      // preferujeme text ve strong, alergeny / poznámky nechceme
+      const strongText = cleanText(left.find("strong").first().text());
+      const name = strongText || cleanText(left.text()).replace(/\(\s*\d+(?:\s*,\s*\d+)*\s*\)\s*$/g, "").trim();
+      if (!name) return;
+
+      const rawPrice = cleanText(tds.eq(1).text());
+      const pm = rawPrice.match(/(\d{2,4})/);
+      const price = pm ? pm[1] : null;
+
+      meals.push({ name, price, day: dayLabel });
+    });
+
+    if (meals.length) sections.push({ id, dayLabel, dayIndex, meals });
+  });
+
+  if (!sections.length) return [];
+
+  let selected = sections;
+  if (type === "today") {
+    if (activeCollapseId) {
+      const active = sections.filter((s) => s.id === activeCollapseId);
+      if (active.length) selected = active;
+    } else {
+      const todayIdx = new Date().getDay();
+      const sameDay = sections.filter((s) => s.dayIndex === todayIdx);
+      if (sameDay.length) selected = sameDay;
+    }
   }
 
   return selected.flatMap((s) => s.meals).slice(0, 200);
@@ -187,6 +273,10 @@ async function readHtmlResponse(resp, url) {
 function extractMealsBySource(url, html, type) {
   if (isMenickaPrintUrl(url)) {
     const parsed = extractMealsMenickaPrint(html, type);
+    if (parsed.length) return parsed;
+  }
+  if (isSalandaUrl(url)) {
+    const parsed = extractMealsSalanda(html, type);
     if (parsed.length) return parsed;
   }
   return extractMealsHeuristic(html);

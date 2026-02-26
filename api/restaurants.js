@@ -82,6 +82,32 @@ function applyUpdate(list, { id, mode, name, url }) {
   return { ok: true, item: updated, list: next };
 }
 
+function applyReorder(list, ids) {
+  if (!Array.isArray(ids) || !ids.length) {
+    return { ok: false, status: 400, error: "Chybí ids pro reorder" };
+  }
+
+  const currentIds = list.map((r) => r.id);
+  if (ids.length !== currentIds.length) {
+    return { ok: false, status: 400, error: "Počet ids nesedí" };
+  }
+
+  const currentSet = new Set(currentIds);
+  const incomingSet = new Set(ids);
+  if (currentSet.size !== incomingSet.size) {
+    return { ok: false, status: 400, error: "Duplicitní ids v reorder" };
+  }
+
+  for (const id of ids) {
+    if (!currentSet.has(id)) {
+      return { ok: false, status: 400, error: "Neplatné id v reorder" };
+    }
+  }
+
+  const byId = new Map(list.map((r) => [r.id, r]));
+  return { ok: true, list: ids.map((id) => byId.get(id)).filter(Boolean) };
+}
+
 export default async function handler(req, res) {
   if (req.method === "GET") {
     const list = await readList();
@@ -100,6 +126,15 @@ export default async function handler(req, res) {
 
       await writeList(result.list);
       return res.status(200).json({ ok: true, item: result.item, list: result.list });
+    }
+
+    if (action === "reorder") {
+      const list = await readList();
+      const result = applyReorder(list, body.ids);
+      if (!result.ok) return res.status(result.status).json({ error: result.error });
+
+      await writeList(result.list);
+      return res.status(200).json({ ok: true, list: result.list });
     }
 
     // ADD (původní chování)
