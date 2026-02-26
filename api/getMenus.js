@@ -32,6 +32,62 @@ function normalizeMode(mode) {
   return (m === "embed" || m === "parse") ? m : "parse";
 }
 
+function isMenickaPrintUrl(url) {
+  try {
+    const u = new URL(String(url || ""));
+    return u.hostname.includes("menicka.cz") && u.pathname.includes("tisk-profil.php");
+  } catch {
+    return false;
+  }
+}
+
+function parseCzHeadingDateToIso(text) {
+  const m = String(text || "").match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (!m) return null;
+  return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+
+function extractMealsMenickaPrint(html, type) {
+  const $ = loadHtml(html);
+  const sections = [];
+
+  $("div.content").each((_, el) => {
+    const section = $(el);
+    const heading = cleanText(section.find("h2").first().text());
+    const dayIso = parseCzHeadingDateToIso(heading);
+    const meals = [];
+
+    section.find("table.menu tr").each((__, tr) => {
+      const row = $(tr);
+      const foodCell = row.find("td.food").first();
+      if (!foodCell.length) return;
+
+      foodCell.find("em").remove();
+      const name = cleanText(foodCell.text());
+      if (!name) return;
+
+      const rawPrice = cleanText(row.find("td.prize").first().text());
+      const pm = rawPrice.match(/(\d{2,4})/);
+      const price = pm ? pm[1] : null;
+
+      meals.push({ name, price, day: heading || null });
+    });
+
+    if (meals.length) sections.push({ dayIso, meals });
+  });
+
+  if (!sections.length) return [];
+
+  let selected = sections;
+  if (type === "today") {
+    const t = todayISO();
+    const onlyToday = sections.filter((s) => s.dayIso === t);
+    if (onlyToday.length) selected = onlyToday;
+  }
+
+  return selected.flatMap((s) => s.meals).slice(0, 200);
+}
+
 /**
  * Heuristický parser – základní (není 100%)
  */
@@ -116,6 +172,26 @@ async function fetchWithTimeout(url, ms = 15000) {
   }
 }
 
+async function readHtmlResponse(resp, url) {
+  if (isMenickaPrintUrl(url)) {
+    const buf = Buffer.from(await resp.arrayBuffer());
+    try {
+      return new TextDecoder("windows-1250").decode(buf);
+    } catch {
+      return buf.toString("latin1");
+    }
+  }
+  return resp.text();
+}
+
+function extractMealsBySource(url, html, type) {
+  if (isMenickaPrintUrl(url)) {
+    const parsed = extractMealsMenickaPrint(html, type);
+    if (parsed.length) return parsed;
+  }
+  return extractMealsHeuristic(html);
+}
+
 async function buildMenus(type) {
   const restaurants = await loadRestaurants();
   const out = [];
@@ -142,8 +218,8 @@ async function buildMenus(type) {
       const resp = await fetchWithTimeout(url, 15000);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      const html = await resp.text();
-      const meals = extractMealsHeuristic(html);
+      const html = await readHtmlResponse(resp, url);
+      const meals = extractMealsBySource(url, html, type);
 
       out.push({ id: r.id || name, name, url, mode, meals: meals.length ? meals : [] });
     } catch (e) {
