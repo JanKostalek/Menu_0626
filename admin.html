@@ -26,62 +26,57 @@
       text-align: right;
     }
 
-    .row { display:flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .section { background:#fff; border:1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin: 12px 0; }
-    .muted { color:#666; font-size: 13px; }
-    .ok { color:#0b7a0b; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    .row input, .row select { flex: 1 1 320px; padding:10px; margin:6px 0; }
 
-    input[type="text"], select {
-      padding: 8px;
-      border: 1px solid #bbb;
-      border-radius: 6px;
-      width: 100%;
-      max-width: 520px;
-    }
-    select { max-width: 420px; }
+    .section { border:1px solid #ccc; padding:15px; margin-top:20px; background:#fff; border-radius:8px; }
 
-    .btn { padding: 8px 12px; border: 1px solid #bbb; background: #e6e6e6; border-radius: 6px; cursor:pointer; }
-    .btn:hover { background:#dcdcdc; }
+    .list-item { display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .list-left { min-width: 0; flex: 1 1 auto; }
+    .muted { color:#666; font-size: 12px; word-break: break-all; }
 
-    .danger { background:#b00020; border-color:#7a0016; color:#fff; }
-    .danger:hover { background:#8b0019; }
-
-    .restaurantRow{
-      display:flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .leftCol { flex: 1; min-width: 260px; }
-    .actionsRight { display:flex; gap: 8px; align-items: center; }
-
-    .modeBox { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; margin-top: 6px; }
-
-    .modeBtn{
-      padding: 6px 10px;
+    .btn{
+      padding: 8px 12px;
       border: 1px solid #bbb;
       background: #e6e6e6;
-      border-radius: 20px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+    .btn:hover{ background:#dcdcdc; }
+
+    .danger { background:#b00020; color:white; border:none; padding:8px 10px; cursor:pointer; border-radius:6px; }
+    .danger:hover { opacity:0.9; }
+
+    .updateBtn{
+      background:#2d6cdf;
+      color:#fff;
+      border:none;
+      padding:8px 10px;
       cursor:pointer;
+      border-radius:6px;
+      margin-right: 8px;
     }
-    .modeBtn:hover{ background:#dcdcdc; }
+    .updateBtn:hover{ opacity:0.9; }
 
-    .modeActive{
-      background:#b9e4b9 !important;
-      border-color:#7ac77a !important;
-    }
+    .pill { display:inline-block; padding:3px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; background:#f3f3f3; }
 
-    .tag{
-      display:inline-block;
-      font-size: 12px;
-      padding: 2px 8px;
+    .modeBox{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+    .modeBtn{
+      padding: 5px 10px;
       border-radius: 999px;
-      border: 1px solid #ddd;
-      background: #f5f5f5;
-      margin-left: 6px;
-      color:#333;
+      border: 1px solid #bbb;
+      background: #f3f3f3;
+      cursor:pointer;
+      font-size: 12px;
     }
+    .modeBtn.active{
+      background: #b9e4b9;
+      border-color: #7ac77a;
+    }
+
+    .actionsRight{ display:flex; gap: 0px; align-items:center; }
+    hr{ border:none; border-top:1px solid #ddd; margin: 12px 0; }
   </style>
 </head>
 <body>
@@ -92,10 +87,7 @@
   <button class="btn" onclick="goBack()">← Zpět na menu</button>
 
   <div class="rightTop">
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button class="btn" id="btnApplyUpdates" onclick="applyPendingUpdates()" disabled>Update</button>
-      <button class="btn" onclick="reCacheAll()">ReCache</button>
-    </div>
+    <button class="btn" onclick="reCacheAll()">ReCache</button>
     <div id="recacheStatus" class="recache-status"></div>
   </div>
 </div>
@@ -155,15 +147,6 @@ const LS_RESTAURANTS_SIG = "menu03_restaurants_sig";
 
 const pendingModeById = new Map();
 
-const btnApplyUpdates = document.getElementById("btnApplyUpdates");
-
-function updatePendingButton() {
-  if (!btnApplyUpdates) return;
-  const n = pendingModeById.size;
-  btnApplyUpdates.disabled = n === 0;
-  btnApplyUpdates.textContent = n ? `Update (${n})` : "Update";
-}
-
 function setStatus(msg, isOk=false) {
   statusEl.textContent = msg || "";
   statusEl.className = "muted" + (isOk ? " ok" : "");
@@ -173,9 +156,16 @@ function setRecacheStatus(msg) {
   recacheStatusEl.textContent = msg || "";
 }
 
-function normalizeMode(mode) {
-  const m = String(mode || "").toLowerCase();
-  return m === "embed" ? "embed" : "parse";
+async function fetchRestaurants() {
+  const resp = await fetch("/api/restaurants", { cache: "no-store" });
+  if (!resp.ok) throw new Error("GET /api/restaurants " + resp.status);
+  return await resp.json();
+}
+
+async function fetchSuggestions() {
+  const resp = await fetch("/api/suggestions", { cache: "no-store" });
+  if (!resp.ok) throw new Error("GET /api/suggestions " + resp.status);
+  return await resp.json();
 }
 
 function clearLocalCacheOnly() {
@@ -188,26 +178,146 @@ function clearLocalCacheOnly() {
   } catch {}
 }
 
-async function reCacheAll() {
-  setRecacheStatus("Čistím cache…");
-  try {
-    const resp = await fetch("/api/recache", { method: "POST" });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      setRecacheStatus("ReCache selhal: " + (data.error || resp.status));
-      return;
-    }
-    clearLocalCacheOnly();
-    setRecacheStatus("Hotovo ✅");
-  } catch (e) {
-    setRecacheStatus("ReCache selhal: " + (e?.message || e));
+function normalizeMode(m) {
+  const v = String(m || "").toLowerCase();
+  return (v === "embed" || v === "parse") ? v : "parse";
+}
+
+function renderRestaurants(restaurants) {
+  if (!restaurants || restaurants.length === 0) {
+    listEl.innerHTML = "<div class='muted'>Zatím žádné restaurace.</div>";
+    return;
   }
+
+  const html = restaurants.map(r => {
+    const currentMode = normalizeMode(r.mode);
+    const pending = pendingModeById.has(r.id) ? pendingModeById.get(r.id) : currentMode;
+
+    const parseActive = pending === "parse" ? "active" : "";
+    const embedActive = pending === "embed" ? "active" : "";
+
+    return `
+      <div class="list-item">
+        <div class="list-left">
+          <div>
+            <b>${escapeHtml(r.name)}</b>
+            <span class="pill">${escapeHtml(currentMode)}</span>
+          </div>
+
+          <div class="muted">${escapeHtml(r.url)}</div>
+
+          <div class="modeBox">
+            <span class="muted">Mode:</span>
+            <button class="modeBtn ${parseActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','parse')">Parse</button>
+            <button class="modeBtn ${embedActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','embed')">Embed</button>
+            <span class="muted">→ pak klikni Update</span>
+          </div>
+        </div>
+
+        <div class="actionsRight">
+          <button class="updateBtn" onclick="updateRestaurantMode('${escapeHtmlAttr(r.id)}')">Update</button>
+          <button class="danger" onclick="deleteRestaurant('${escapeHtmlAttr(r.id)}', '${escapeHtmlAttr(r.name)}')">Smazat</button>
+        </div>
+      </div>
+      <hr>
+    `;
+  }).join("");
+
+  listEl.innerHTML = html;
+}
+
+function renderSuggestions(items) {
+  if (!items || items.length === 0) {
+    suggestionsEl.innerHTML = "<div class='muted'>Zatím žádné návrhy.</div>";
+    return;
+  }
+
+  const html = items.map(s => {
+    const addr = s.menuUrl && s.menuUrl.trim() ? s.menuUrl.trim() : "neuvedeno";
+    const who = (s.submitter && s.submitter.trim()) ? s.submitter.trim() : "neuvedeno";
+    return `
+      <div class="list-item">
+        <div class="list-left">
+          <div><b>${escapeHtml(s.name)}</b></div>
+          <div class="muted">${escapeHtml(addr)}</div>
+          <div class="muted">Jméno: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
+        </div>
+        <div>
+          <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(s.id)}', '${escapeHtmlAttr(s.name)}')">Smazat</button>
+        </div>
+      </div>
+      <hr>
+    `;
+  }).join("");
+
+  suggestionsEl.innerHTML = html;
+}
+
+async function loadRestaurants() {
+  listEl.textContent = "Načítám…";
+  try {
+    const restaurants = await fetchRestaurants();
+
+    const ids = new Set(restaurants.map(r => r.id));
+    for (const k of Array.from(pendingModeById.keys())) {
+      if (!ids.has(k)) pendingModeById.delete(k);
+    }
+
+    renderRestaurants(restaurants);
+  } catch (e) {
+    listEl.textContent = "Chyba: " + (e.message || e);
+  }
+}
+
+async function loadSuggestions() {
+  suggestionsEl.textContent = "Načítám…";
+  try {
+    const items = await fetchSuggestions();
+    renderSuggestions(items);
+  } catch (e) {
+    suggestionsEl.textContent = "Chyba: " + (e.message || e);
+  }
+}
+
+function pickMode(id, mode) {
+  pendingModeById.set(id, normalizeMode(mode));
+  loadRestaurants();
+}
+
+async function updateRestaurantMode(id) {
+  const mode = pendingModeById.get(id);
+  if (!mode) {
+    alert("Nejprve vyber Parse nebo Embed.");
+    return;
+  }
+
+  setStatus("Ukládám změnu…");
+
+  // DŮLEŽITÉ: update děláme přes POST (kvůli “Method not allowed” na PUT)
+  const resp = await fetch("/api/restaurants", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "update", id, mode })
+  });
+
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    setStatus("Update selhal: " + (data.error || resp.status), false);
+    return;
+  }
+
+  clearLocalCacheOnly();
+
+  setStatus("Update hotový ✅ (cache invalidována)", true);
+
+  pendingModeById.delete(id);
+  await loadRestaurants();
 }
 
 async function addRestaurant() {
   const name = document.getElementById("name").value.trim();
   const url = document.getElementById("url").value.trim();
-  const mode = normalizeMode(document.getElementById("mode").value);
+  const mode = document.getElementById("mode").value;
 
   if (!name || !url) {
     alert("Vyplň název i URL.");
@@ -215,25 +325,25 @@ async function addRestaurant() {
   }
 
   setStatus("Ukládám…");
-
   const resp = await fetch("/api/restaurants", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "add", name, url, mode })
+    body: JSON.stringify({ name, url, mode })
   });
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    setStatus("Uložení selhalo: " + (data.error || resp.status), false);
+    setStatus("Nepodařilo se uložit: " + (data.error || resp.status), false);
     return;
   }
 
-  clearLocalCacheOnly();
-  setStatus("Uloženo ✅ (cache invalidována automaticky)", true);
-
   document.getElementById("name").value = "";
   document.getElementById("url").value = "";
+  document.getElementById("mode").value = "parse";
 
+  setStatus("Uloženo ✅ (cache invalidována automaticky)", true);
+
+  clearLocalCacheOnly();
   await loadRestaurants();
 }
 
@@ -246,153 +356,42 @@ async function deleteRestaurant(id, name) {
     setStatus("Nepodařilo se smazat: " + (data.error || resp.status), false);
     return;
   }
+  setStatus("Smazáno ✅ (cache invalidována automaticky)", true);
+
+  pendingModeById.delete(id);
   clearLocalCacheOnly();
-  setStatus("Smazáno ✅", true);
   await loadRestaurants();
 }
 
-function pickMode(id, mode) {
-  pendingModeById.set(id, normalizeMode(mode));
-  updatePendingButton();
-  loadRestaurants();
-}
+async function deleteSuggestion(id, name) {
+  if (!confirm("Smazat návrh: " + name + "?")) return;
 
-async function applyPendingUpdates() {
-  if (pendingModeById.size === 0) return;
-
-  if (!confirm(`Uložit změny pro ${pendingModeById.size} restaurací?`)) return;
-
-  setStatus("Ukládám změny…");
-
-  const entries = Array.from(pendingModeById.entries());
-  for (const [id, mode] of entries) {
-    const resp = await fetch("/api/restaurants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update", id, mode })
-    });
-
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      setStatus("Update selhal: " + (data.error || resp.status), false);
-      return;
-    }
-  }
-
-  clearLocalCacheOnly();
-  setStatus("Update hotový ✅ (cache invalidována)", true);
-
-  pendingModeById.clear();
-  updatePendingButton();
-  await loadRestaurants();
-}
-
-// zpětná kompatibilita (kdyby někde zůstalo volání)
-async function updateRestaurantMode(id) {
-  pendingModeById.set(id, pendingModeById.get(id) || "parse");
-  updatePendingButton();
-  return applyPendingUpdates();
-}
-
-async function loadRestaurants() {
-  setStatus("");
-
-  const resp = await fetch("/api/restaurants", { method: "GET" });
-  const data = await resp.json().catch(() => ({}));
-
-  if (!resp.ok) {
-    listEl.innerHTML = `<div class="muted">Chyba: GET /api/restaurants ${resp.status}</div>`;
-    return;
-  }
-
-  const restaurants = Array.isArray(data?.restaurants) ? data.restaurants : [];
-
-  if (!restaurants.length) {
-    listEl.innerHTML = `<div class="muted">Žádné restaurace.</div>`;
-    updatePendingButton();
-    return;
-  }
-
-  listEl.innerHTML = restaurants.map(r => {
-    const pending = pendingModeById.get(r.id);
-    const effectiveMode = pending || normalizeMode(r.mode);
-
-    const parseActive = effectiveMode === "parse" ? "modeActive" : "";
-    const embedActive = effectiveMode === "embed" ? "modeActive" : "";
-
-    const tag = `<span class="tag">${escapeHtml(normalizeMode(r.mode))}</span>`;
-
-    return `
-      <div class="restaurantRow">
-        <div class="leftCol">
-          <div><strong>${escapeHtml(r.name)}</strong> ${tag}</div>
-          <div class="muted">${escapeHtml(r.url)}</div>
-
-          <div class="modeBox">
-            <span class="muted">Mode:</span>
-            <button class="modeBtn ${parseActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','parse')">Parse</button>
-            <button class="modeBtn ${embedActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','embed')">Embed</button>
-            <span class="muted">→ změny se uloží tlačítkem Update nahoře</span>
-          </div>
-        </div>
-
-        <div class="actionsRight">
-          <button class="danger" onclick="deleteRestaurant('${escapeHtmlAttr(r.id)}', '${escapeHtmlAttr(r.name)}')">Smazat</button>
-        </div>
-      </div>
-      <hr>
-    `;
-  }).join("");
-
-  await loadSuggestions();
-  updatePendingButton();
-}
-
-async function loadSuggestions() {
-  const resp = await fetch("/api/suggestions", { method: "GET" });
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    suggestionsEl.innerHTML = `<div class="muted">Chyba: GET /api/suggestions ${resp.status}</div>`;
-    return;
-  }
-
-  const items = Array.isArray(data?.items) ? data.items : [];
-  if (!items.length) {
-    suggestionsEl.innerHTML = `<div class="muted">Žádné návrhy.</div>`;
-    return;
-  }
-
-  suggestionsEl.innerHTML = items.map(s => {
-    const name = s?.name || "";
-    const url = s?.url || "";
-    const contact = s?.contact || "";
-    const id = s?.id || "";
-
-    return `
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-        <div>
-          <div><strong>${escapeHtml(name)}</strong></div>
-          <div class="muted">${escapeHtml(url)}</div>
-          <div class="muted">${escapeHtml(contact)}</div>
-        </div>
-        <div>
-          <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(id)}')">Smazat</button>
-        </div>
-      </div>
-      <hr>
-    `;
-  }).join("");
-}
-
-async function deleteSuggestion(id) {
-  if (!confirm("Smazat návrh?")) return;
   const resp = await fetch("/api/suggestions?id=" + encodeURIComponent(id), { method: "DELETE" });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    alert("Smazání selhalo: " + (data.error || resp.status));
+    alert("Nepodařilo se smazat: " + (data.error || resp.status));
     return;
   }
+
   await loadSuggestions();
+}
+
+async function reCacheAll() {
+  if (!confirm("ReCache: vyčistit lokální cache a vynutit nové cachování na serveru?")) return;
+
+  setRecacheStatus("Provádím ReCache…");
+
+  clearLocalCacheOnly();
+
+  const resp = await fetch("/api/recache", { method: "POST" });
+  const data = await resp.json().catch(() => ({}));
+
+  if (!resp.ok) {
+    setRecacheStatus("ReCache selhal: " + (data.error || resp.status));
+    return;
+  }
+
+  setRecacheStatus("ReCache hotovo ✅ (teď jdi zpět na hlavní stránku)");
 }
 
 function escapeHtml(str) {

@@ -207,18 +207,3 @@ body {
   border: 1px solid #ddd;
   border-radius: 6px;
 }
-
-/* ===== EMPTY / HERO ===== */
-.empty-state{
-  background:#ffffff;
-  border:1px solid #ddd;
-  border-radius: 8px;
-  padding: 22px;
-  color:#333;
-}
-
-.hero-empty{
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.25;
-}
