@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
@@ -17,7 +17,13 @@
       flex-direction: column;
       align-items: flex-end;
       gap: 6px;
-      min-width: 260px;
+      min-width: 360px;
+    }
+    .rightTopButtons{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      margin-right: 12px;
     }
     .recache-status{
       font-size: 12px;
@@ -76,49 +82,53 @@
     }
 
     .actionsRight{ display:flex; gap: 0px; align-items:center; }
+    .modeHintChanged{ color:#2d6cdf; font-weight:600; }
     hr{ border:none; border-top:1px solid #ddd; margin: 12px 0; }
   </style>
 </head>
 <body>
 
-<h2>Admin – Restaurace</h2>
+<h2>Admin â€“ Restaurace</h2>
 
 <div class="topbar">
-  <button class="btn" onclick="goBack()">← Zpět na menu</button>
+  <button class="btn" onclick="goBack()">â† ZpÄ›t na menu</button>
 
   <div class="rightTop">
-    <button class="btn" onclick="reCacheAll()">ReCache</button>
+    <div class="rightTopButtons">
+      <button class="btn" onclick="saveAllModeChanges()">UloÅ¾it zmÄ›ny</button>
+      <button class="btn" onclick="reCacheAll()">ReCache</button>
+    </div>
     <div id="recacheStatus" class="recache-status"></div>
   </div>
 </div>
 
 <div class="section">
-  <h3>Přidat restauraci</h3>
+  <h3>PÅ™idat restauraci</h3>
   <div class="row">
-    <input type="text" id="name" placeholder="Název restaurace" />
-    <input type="text" id="url" placeholder="URL menu (HTML/PDF/obrázek)" />
+    <input type="text" id="name" placeholder="NÃ¡zev restaurace" />
+    <input type="text" id="url" placeholder="URL menu (HTML/PDF/obrÃ¡zek)" />
     <select id="mode">
-      <option value="parse" selected>Parsovat HTML (zkusit vyčíst jídla a ceny)</option>
-      <option value="embed">Zobrazit zdroj (iframe/popup) – bez parsování</option>
+      <option value="parse" selected>Parsovat HTML (zkusit vyÄÃ­st jÃ­dla a ceny)</option>
+      <option value="embed">Zobrazit zdroj (iframe/popup) â€“ bez parsovÃ¡nÃ­</option>
     </select>
   </div>
   <div class="row">
-    <button class="btn" onclick="addRestaurant()">Uložit</button>
+    <button class="btn" onclick="addRestaurant()">UloÅ¾it</button>
     <span id="status" class="muted"></span>
   </div>
   <div class="muted">
-    Tip: Pro weby se složitou strukturou (cookie/18+/dynamika) použij „Zobrazit zdroj“.
+    Tip: Pro weby se sloÅ¾itou strukturou (cookie/18+/dynamika) pouÅ¾ij â€žZobrazit zdrojâ€œ.
   </div>
 </div>
 
 <div class="section">
-  <h3>Návrhy restaurací</h3>
-  <div id="suggestions" class="muted">Načítám…</div>
+  <h3>NÃ¡vrhy restauracÃ­</h3>
+  <div id="suggestions" class="muted">NaÄÃ­tÃ¡mâ€¦</div>
 </div>
 
 <div class="section">
-  <h3>Seznam restaurací</h3>
-  <div id="list" class="muted">Načítám…</div>
+  <h3>Seznam restauracÃ­</h3>
+  <div id="list" class="muted">NaÄÃ­tÃ¡mâ€¦</div>
 </div>
 
 <script>
@@ -126,7 +136,7 @@ const PASSWORD = "H3510";
 
 const entered = prompt("Zadej heslo:");
 if (entered !== PASSWORD) {
-  alert("Špatné heslo");
+  alert("Å patnÃ© heslo");
   window.location.href = "/";
 }
 
@@ -185,7 +195,7 @@ function normalizeMode(m) {
 
 function renderRestaurants(restaurants) {
   if (!restaurants || restaurants.length === 0) {
-    listEl.innerHTML = "<div class='muted'>Zatím žádné restaurace.</div>";
+    listEl.innerHTML = "<div class='muted'>ZatÃ­m Å¾Ã¡dnÃ© restaurace.</div>";
     return;
   }
 
@@ -210,12 +220,11 @@ function renderRestaurants(restaurants) {
             <span class="muted">Mode:</span>
             <button class="modeBtn ${parseActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','parse')">Parse</button>
             <button class="modeBtn ${embedActive}" onclick="pickMode('${escapeHtmlAttr(r.id)}','embed')">Embed</button>
-            <span class="muted">→ pak klikni Update</span>
+            ${pending !== currentMode ? `<span class="muted modeHintChanged">Změna připravena</span>` : `<span class="muted">Beze změny</span>`}
           </div>
         </div>
 
         <div class="actionsRight">
-          <button class="updateBtn" onclick="updateRestaurantMode('${escapeHtmlAttr(r.id)}')">Update</button>
           <button class="danger" onclick="deleteRestaurant('${escapeHtmlAttr(r.id)}', '${escapeHtmlAttr(r.name)}')">Smazat</button>
         </div>
       </div>
@@ -228,7 +237,7 @@ function renderRestaurants(restaurants) {
 
 function renderSuggestions(items) {
   if (!items || items.length === 0) {
-    suggestionsEl.innerHTML = "<div class='muted'>Zatím žádné návrhy.</div>";
+    suggestionsEl.innerHTML = "<div class='muted'>ZatÃ­m Å¾Ã¡dnÃ© nÃ¡vrhy.</div>";
     return;
   }
 
@@ -240,7 +249,7 @@ function renderSuggestions(items) {
         <div class="list-left">
           <div><b>${escapeHtml(s.name)}</b></div>
           <div class="muted">${escapeHtml(addr)}</div>
-          <div class="muted">Jméno: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
+          <div class="muted">JmÃ©no: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
         </div>
         <div>
           <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(s.id)}', '${escapeHtmlAttr(s.name)}')">Smazat</button>
@@ -254,7 +263,7 @@ function renderSuggestions(items) {
 }
 
 async function loadRestaurants() {
-  listEl.textContent = "Načítám…";
+  listEl.textContent = "NaÄÃ­tÃ¡mâ€¦";
   try {
     const restaurants = await fetchRestaurants();
 
@@ -270,7 +279,7 @@ async function loadRestaurants() {
 }
 
 async function loadSuggestions() {
-  suggestionsEl.textContent = "Načítám…";
+  suggestionsEl.textContent = "NaÄÃ­tÃ¡mâ€¦";
   try {
     const items = await fetchSuggestions();
     renderSuggestions(items);
@@ -284,33 +293,47 @@ function pickMode(id, mode) {
   loadRestaurants();
 }
 
-async function updateRestaurantMode(id) {
-  const mode = pendingModeById.get(id);
-  if (!mode) {
-    alert("Nejprve vyber Parse nebo Embed.");
+async function saveAllModeChanges() {
+  const entries = Array.from(pendingModeById.entries());
+  if (!entries.length) {
+    setStatus("Není co uložit.");
     return;
   }
 
-  setStatus("Ukládám změnu…");
+  setStatus(`Ukládám ${entries.length} změn(y)…`);
 
-  // DŮLEŽITÉ: update děláme přes POST (kvůli “Method not allowed” na PUT)
-  const resp = await fetch("/api/restaurants", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "update", id, mode })
-  });
+  let okCount = 0;
+  let firstError = "";
 
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    setStatus("Update selhal: " + (data.error || resp.status), false);
-    return;
+  for (const [id, mode] of entries) {
+    try {
+      const resp = await fetch("/api/restaurants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", id, mode })
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (!firstError) firstError = data.error || String(resp.status);
+        continue;
+      }
+
+      pendingModeById.delete(id);
+      okCount++;
+    } catch (e) {
+      if (!firstError) firstError = String(e?.message || e);
+    }
   }
 
-  clearLocalCacheOnly();
+  if (okCount > 0) clearLocalCacheOnly();
 
-  setStatus("Update hotový ✅ (cache invalidována)", true);
+  if (firstError) {
+    setStatus(`Uloženo ${okCount}/${entries.length}. Chyba: ${firstError}`, false);
+  } else {
+    setStatus(`Uloženo ${okCount} změn ✅ (cache invalidována)`, true);
+  }
 
-  pendingModeById.delete(id);
   await loadRestaurants();
 }
 
@@ -320,11 +343,11 @@ async function addRestaurant() {
   const mode = document.getElementById("mode").value;
 
   if (!name || !url) {
-    alert("Vyplň název i URL.");
+    alert("VyplÅˆ nÃ¡zev i URL.");
     return;
   }
 
-  setStatus("Ukládám…");
+  setStatus("UklÃ¡dÃ¡mâ€¦");
   const resp = await fetch("/api/restaurants", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -333,7 +356,7 @@ async function addRestaurant() {
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    setStatus("Nepodařilo se uložit: " + (data.error || resp.status), false);
+    setStatus("NepodaÅ™ilo se uloÅ¾it: " + (data.error || resp.status), false);
     return;
   }
 
@@ -341,7 +364,7 @@ async function addRestaurant() {
   document.getElementById("url").value = "";
   document.getElementById("mode").value = "parse";
 
-  setStatus("Uloženo ✅ (cache invalidována automaticky)", true);
+  setStatus("UloÅ¾eno âœ… (cache invalidovÃ¡na automaticky)", true);
 
   clearLocalCacheOnly();
   await loadRestaurants();
@@ -349,14 +372,14 @@ async function addRestaurant() {
 
 async function deleteRestaurant(id, name) {
   if (!confirm("Opravdu smazat: " + name + "?")) return;
-  setStatus("Mažu…");
+  setStatus("MaÅ¾uâ€¦");
   const resp = await fetch("/api/restaurants?id=" + encodeURIComponent(id), { method: "DELETE" });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    setStatus("Nepodařilo se smazat: " + (data.error || resp.status), false);
+    setStatus("NepodaÅ™ilo se smazat: " + (data.error || resp.status), false);
     return;
   }
-  setStatus("Smazáno ✅ (cache invalidována automaticky)", true);
+  setStatus("SmazÃ¡no âœ… (cache invalidovÃ¡na automaticky)", true);
 
   pendingModeById.delete(id);
   clearLocalCacheOnly();
@@ -364,12 +387,12 @@ async function deleteRestaurant(id, name) {
 }
 
 async function deleteSuggestion(id, name) {
-  if (!confirm("Smazat návrh: " + name + "?")) return;
+  if (!confirm("Smazat nÃ¡vrh: " + name + "?")) return;
 
   const resp = await fetch("/api/suggestions?id=" + encodeURIComponent(id), { method: "DELETE" });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    alert("Nepodařilo se smazat: " + (data.error || resp.status));
+    alert("NepodaÅ™ilo se smazat: " + (data.error || resp.status));
     return;
   }
 
@@ -377,9 +400,9 @@ async function deleteSuggestion(id, name) {
 }
 
 async function reCacheAll() {
-  if (!confirm("ReCache: vyčistit lokální cache a vynutit nové cachování na serveru?")) return;
+  if (!confirm("ReCache: vyÄistit lokÃ¡lnÃ­ cache a vynutit novÃ© cachovÃ¡nÃ­ na serveru?")) return;
 
-  setRecacheStatus("Provádím ReCache…");
+  setRecacheStatus("ProvÃ¡dÃ­m ReCacheâ€¦");
 
   clearLocalCacheOnly();
 
@@ -391,7 +414,7 @@ async function reCacheAll() {
     return;
   }
 
-  setRecacheStatus("ReCache hotovo ✅ (teď jdi zpět na hlavní stránku)");
+  setRecacheStatus("ReCache hotovo âœ… (teÄ jdi zpÄ›t na hlavnÃ­ strÃ¡nku)");
 }
 
 function escapeHtml(str) {
