@@ -31,6 +31,8 @@ const RESTAURANT_CATEGORY_META = {
   burger: { label: "Burger", icon: "/icons/burger.png" },
   kavarna: { label: "Kavárna", icon: "/icons/kavarna.png" },
 };
+const VEG_ICON_YES = "/icons/vegetarian-yes.png";
+const VEG_ICON_NO = "/icons/vegetarian-no.png";
 
 /* ===== COOKIES HELPERS ===== */
 
@@ -374,6 +376,65 @@ function normalizeMealForKcalQuery(name) {
     .replace(/\s{2,}/g, " ")
     .trim()
     .slice(0, 120);
+}
+
+function normalizeForFoodHeuristics(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function estimateVegetarianMeal(mealName) {
+  const s = normalizeForFoodHeuristics(mealName);
+  const compact = s.replace(/\s+/g, " ");
+
+  const positiveStrong = [
+    "vege",
+    "vegetarian",
+    "veganske",
+    "vegansky",
+    "vegan",
+    "bez masa",
+    "tofu",
+    "falafel",
+  ];
+  if (positiveStrong.some((k) => compact.includes(k))) return true;
+
+  const negativeMeat = [
+    "kureci", "veprove", "hovezi", "kruti", "kachni", "ryba", "losos", "tunak", "krevet",
+    "rizek", "stek", "steak", "burger", "sunka", "slanina", "uzen", "klobas", "parek",
+    "salsiccia", "jatra", "drstkov", "gulas", "segedin", "panenka", "krkovice", "vejce se sunkou",
+    "maso", "vyvar s masem", "s kurecim", "s veprovym", "s hovezim", "s lososem", "s tunkem"
+  ];
+  if (negativeMeat.some((k) => compact.includes(k))) return false;
+
+  const likelyVeg = [
+    "syr", "hermelin", "brokolice", "kvetak", "spenat", "zelenin", "salat", "cizrna", "cocka",
+    "fazole", "houb", "hrib", "kuskus", "cous cous", "gnocchi", "rajcat", "paprika", "tofu"
+  ];
+  if (likelyVeg.some((k) => compact.includes(k))) return true;
+
+  return false;
+}
+
+function renderVegetarianEstimate(el, mealName) {
+  if (!el) return;
+
+  const isVeg = estimateVegetarianMeal(mealName);
+  const src = isVeg ? VEG_ICON_YES : VEG_ICON_NO;
+  const title = isVeg ? "Vegetariánské (odhad)" : "Není vegetariánské (odhad)";
+
+  el.innerHTML = `
+    <img
+      class="veg-estimate-icon"
+      src="${escapeHtmlAttr(src)}"
+      alt="${escapeHtmlAttr(title)}"
+      title="${escapeHtmlAttr(title)}"
+      loading="lazy"
+      onerror="this.style.display='none'"
+    />
+  `;
 }
 
 function buildUsdaQueryCandidates(mealName) {
@@ -810,13 +871,16 @@ function renderMenus() {
         const price = m.price ? `${m.price} Kč` : "—";
         const day = m.day ? `(${m.day})` : "";
         const kcalId = `kcal-${Math.random().toString(36).slice(2, 10)}`;
+        const vegId = `veg-${Math.random().toString(36).slice(2, 10)}`;
         mealDiv.innerHTML = `
           <div><b>${escapeHtml(m.name)}</b> ${escapeHtml(day)}</div>
-          <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span></div>
+          <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span> <span id="${vegId}" class="meal-meta-icon"></span></div>
           <hr>
         `;
         const kcalEl = mealDiv.querySelector(`#${kcalId}`);
+        const vegEl = mealDiv.querySelector(`#${vegId}`);
         scheduleKcalEstimate(kcalEl, m.name);
+        renderVegetarianEstimate(vegEl, m.name);
         div.appendChild(mealDiv);
       });
     }

@@ -232,6 +232,20 @@ body {
   color: #666;
 }
 
+.meal-meta-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.veg-estimate-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
 /* ===== SOURCE (PDF/OBRÁZEK/WEB) ===== */
 
 .source-block { margin: 6px 0 14px 0; }
