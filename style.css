@@ -33,6 +33,47 @@ body {
   gap: 10px;
 }
 
+.left-buttons {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.type-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.type-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #bbb;
+  background: #e6e6e6;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.type-filter-btn:hover {
+  background: #dcdcdc;
+}
+
+.type-filter-btn.active {
+  background: #b9e4b9;
+  border-color: #7ac77a;
+}
+
+.type-filter-btn__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 18px;
+}
+
 .top-bar button {
   padding: 8px 14px;
   border: 1px solid #bbb;
@@ -270,6 +311,21 @@ body {
 }
 
 @media (max-width: 900px) {
+  .top-bar {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .right-buttons {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .type-filter-btn {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
   .empty-state {
     min-height: 280px;
   }

@@ -7,6 +7,7 @@ const kcalCache = new Map();
 const kcalPending = new Map();
 
 const COOKIE_FILTERS = "menu03_filters";
+const COOKIE_CATEGORY_FILTERS = "menu03_category_filters";
 
 const LS_MENU_CACHE_TODAY = "menu03_menu_cache_today";
 const LS_MENU_CACHE_ALL = "menu03_menu_cache_all";
@@ -267,6 +268,105 @@ function setFilter(name, enabled) {
   saveFilters(filters);
 }
 
+function loadCategoryFilters() {
+  try {
+    const raw = getCookie(COOKIE_CATEGORY_FILTERS);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === "object" ? obj : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCategoryFilters(filters) {
+  setCookie(COOKIE_CATEGORY_FILTERS, JSON.stringify(filters || {}), 365);
+}
+
+function getSelectedCategoryKeys() {
+  const f = loadCategoryFilters();
+  return Object.entries(f)
+    .filter(([, v]) => v === true)
+    .map(([k]) => normalizeRestaurantCategory(k));
+}
+
+function hasAnyCategoryFilterSelected() {
+  return getSelectedCategoryKeys().length > 0;
+}
+
+function isCategoryFilterEnabled(categoryKey) {
+  const key = normalizeRestaurantCategory(categoryKey);
+  return loadCategoryFilters()[key] === true;
+}
+
+function toggleCategoryFilter(categoryKey) {
+  const key = normalizeRestaurantCategory(categoryKey);
+  const next = { ...loadCategoryFilters() };
+  next[key] = next[key] === true ? false : true;
+  saveCategoryFilters(next);
+}
+
+function clearCategoryFilters() {
+  saveCategoryFilters({});
+}
+
+function isRestaurantAllowedByCategory(restaurant) {
+  if (!hasAnyCategoryFilterSelected()) return true;
+  const key = normalizeRestaurantCategory(restaurant?.category);
+  return isCategoryFilterEnabled(key);
+}
+
+function renderCategoryFilterBar() {
+  const bar = document.getElementById("typeFilterBar");
+  if (!bar) return;
+
+  const anySelected = hasAnyCategoryFilterSelected();
+  const allBtnClass = anySelected ? "type-filter-btn" : "type-filter-btn active";
+
+  const allHtml = `
+    <button type="button" class="${allBtnClass}" data-cat-all="1">
+      <span>Všechny restaurace</span>
+    </button>
+  `;
+
+  const orderedCategoryKeys = Object.keys(RESTAURANT_CATEGORY_META)
+    .sort((a, b) => RESTAURANT_CATEGORY_META[a].label.localeCompare(RESTAURANT_CATEGORY_META[b].label, "cs"));
+
+  const catsHtml = orderedCategoryKeys.map((key) => {
+    const meta = RESTAURANT_CATEGORY_META[key];
+    if (!meta) return "";
+    const active = isCategoryFilterEnabled(key);
+    return `
+      <button type="button" class="type-filter-btn ${active ? "active" : ""}" data-cat-key="${escapeHtmlAttr(key)}">
+        <img class="type-filter-btn__icon" src="${escapeHtmlAttr(meta.icon)}" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'" />
+        <span>${escapeHtml(meta.label)}</span>
+      </button>
+    `;
+  }).join("");
+
+  bar.innerHTML = allHtml + catsHtml;
+
+  bar.querySelector('[data-cat-all="1"]')?.addEventListener("click", async () => {
+    clearCategoryFilters();
+    renderCategoryFilterBar();
+    renderFilters();
+    renderMenus();
+    if (!menuLoading && (!menusCache || menusCache.length === 0)) await loadMenus(currentType);
+  });
+
+  bar.querySelectorAll("[data-cat-key]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const key = e.currentTarget.getAttribute("data-cat-key");
+      if (!key) return;
+      toggleCategoryFilter(key);
+      renderCategoryFilterBar();
+      renderFilters();
+      renderMenus();
+      if (!menuLoading && (!menusCache || menusCache.length === 0)) await loadMenus(currentType);
+    });
+  });
+}
+
 function normalizeMealForKcalQuery(name) {
   return String(name || "")
     .replace(/\b\d+[.,]?\d*\s*(g|kg|ml|l)\b/gi, " ")
@@ -496,7 +596,13 @@ function renderFilters() {
     return;
   }
 
-  const html = restaurantsList.map((r) => {
+  const visibleRestaurants = restaurantsList.filter((r) => isRestaurantAllowedByCategory(r));
+  if (!visibleRestaurants.length) {
+    container.innerHTML = `<div class="small-muted">Pro zvolený typ nebyla nalezena žádná restaurace.</div>`;
+    return;
+  }
+
+  const html = visibleRestaurants.map((r) => {
     const enabled = isEnabledByFilter(r.name);
     const cls = enabled ? "filter-btn active-green" : "filter-btn";
     const category = normalizeRestaurantCategory(r.category);
@@ -565,6 +671,7 @@ async function loadRestaurantsList() {
   // Po otevření stránky začíná bez vybrané restaurace.
   setDefaultFirstVisitState();
 
+  renderCategoryFilterBar();
   renderFilters();
 }
 
@@ -630,9 +737,6 @@ async function loadMenus(type) {
   }
 }
 
-function loadToday() { return loadMenus("today"); }
-function loadAll() { return loadMenus("all"); }
-
 /* ===== RENDER ===== */
 
 function renderEmptySelectionState(container) {
@@ -669,7 +773,12 @@ function renderMenus() {
     return;
   }
 
-  const filtered = menusCache.filter(r => isEnabledByFilter(r.name));
+  const filtered = menusCache.filter(r => {
+    const selectedByName = isEnabledByFilter(r.name);
+    if (!selectedByName) return false;
+    const sourceRestaurant = restaurantsList.find((x) => (x.id && r.id && x.id === r.id) || x.name === r.name);
+    return isRestaurantAllowedByCategory(sourceRestaurant || r);
+  });
 
   if (!filtered.length) {
     renderEmptySelectionState(container);
@@ -748,5 +857,5 @@ function escapeHtmlAttr(str) { return escapeHtml(str); }
 /* ===== INIT ===== */
 (async function init() {
   await loadRestaurantsList();
-  await loadToday();
+  await loadMenus("today");
 })();
