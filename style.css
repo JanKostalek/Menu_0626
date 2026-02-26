@@ -58,10 +58,6 @@ body {
   line-height: 1.1;
 }
 
-.type-filter-btn:hover {
-  background: #dcdcdc;
-}
-
 .type-filter-btn.active {
   background: #b9e4b9;
   border-color: #7ac77a;
