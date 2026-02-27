@@ -180,7 +180,7 @@
 <h2>Admin – Restaurace</h2>
 
 <div class="topbar">
-  <button class="btn" onclick="goBack()">← Zpět na menu</button>
+  <button class="btn" onclick="closeAdminWindow()">Zavřít</button>
 
   <div class="topbarCenter">
     <div class="rightTopDocs">
@@ -246,8 +246,13 @@ if (entered !== PASSWORD) {
   window.location.href = "/";
 }
 
-function goBack() {
-  window.location.href = "/";
+function closeAdminWindow() {
+  window.close();
+  setTimeout(() => {
+    if (!window.closed) {
+      window.location.href = "/";
+    }
+  }, 100);
 }
 
 function openPopup(url) {
