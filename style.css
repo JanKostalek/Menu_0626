@@ -224,18 +224,17 @@ body {
 
 .filter-btn__label {
   grid-column: 1;
-  padding: 10px 16px;
-  display: -webkit-box;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
   max-width: 100%;
   min-width: 0;
   font-size: inherit;
+  line-height: 1.15;
   white-space: normal;
-  overflow: hidden;
   word-break: normal;
   overflow-wrap: break-word;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
   z-index: 1;
 }
 
