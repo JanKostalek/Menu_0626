@@ -252,7 +252,7 @@
   margin-bottom: 20px;
   border-radius: 6px;
   border: 1px solid #ddd;
-  font-size: 125%;
+  font-size: 156.25%;
 }
 
 .meal {
@@ -270,8 +270,8 @@
 }
 
 .veg-estimate-icon {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   vertical-align: middle;
   margin-left: 4px;
