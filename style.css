@@ -221,11 +221,8 @@ textarea {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("./empty-state-bg.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  opacity: 0.06;
+  background: none;
+  opacity: 0;
   z-index: 0;
   pointer-events: none;
 }
