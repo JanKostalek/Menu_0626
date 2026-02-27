@@ -646,6 +646,38 @@ function hasAnySelected() {
   return Object.values(f).some(v => v === true);
 }
 
+function splitNameToTwoLines(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return null;
+
+  let best = null;
+  for (let i = 1; i < words.length; i++) {
+    const left = words.slice(0, i).join(" ");
+    const right = words.slice(i).join(" ");
+    const score = Math.abs(left.length - right.length);
+    if (!best || score < best.score) best = { left, right, score };
+  }
+  return best ? [best.left, best.right] : null;
+}
+
+function fitRestaurantButtonLabels(container) {
+  if (!container) return;
+
+  const labels = container.querySelectorAll(".filter-btn__label");
+  labels.forEach((label) => {
+    const fullName = label.getAttribute("data-fullname") || label.textContent || "";
+    label.textContent = fullName;
+
+    // Přeteče-li text do ikonové (bílé) části, rozdělíme název do 2 řádků.
+    if (label.scrollWidth <= label.clientWidth) return;
+
+    const parts = splitNameToTwoLines(fullName);
+    if (!parts) return;
+
+    label.innerHTML = `${escapeHtml(parts[0])}<br>${escapeHtml(parts[1])}`;
+  });
+}
+
 /* ===== UI: FILTRY ===== */
 
 function renderFilters() {
@@ -671,10 +703,11 @@ function renderFilters() {
     const iconHtml = iconSrc
       ? `<img class="filter-btn__icon" src="${escapeHtmlAttr(iconSrc)}" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'" />`
       : "";
-    return `<button type="button" class="${cls}" data-name="${escapeHtmlAttr(r.name)}">${iconHtml}<span class="filter-btn__label">${escapeHtml(r.name)}</span></button>`;
+    return `<button type="button" class="${cls}" data-name="${escapeHtmlAttr(r.name)}">${iconHtml}<span class="filter-btn__label" data-fullname="${escapeHtmlAttr(r.name)}">${escapeHtml(r.name)}</span></button>`;
   }).join("");
 
   container.innerHTML = html;
+  fitRestaurantButtonLabels(container);
 
   container.querySelectorAll(".filter-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
