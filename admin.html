@@ -5,12 +5,28 @@
   <title>Admin - Restaurace</title>
   <link rel="stylesheet" href="style.css" />
   <style>
+    body{
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 16px 18px 28px;
+    }
+    h2{
+      margin: 0 0 12px 0;
+      font-size: clamp(30px, 4.4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    h3{
+      margin: 2px 0 14px;
+      font-size: clamp(26px, 3.1vw, 36px);
+      font-weight: 800;
+    }
     .topbar{
       display:flex;
       justify-content: space-between;
       align-items:flex-start;
-      gap: 10px;
-      margin: 10px 0 15px 0;
+      gap: 12px;
+      margin: 10px 0 16px 0;
     }
     .topbarCenter{
       flex: 1 1 auto;
@@ -48,48 +64,84 @@
     }
 
     .row { display:flex; gap:10px; flex-wrap:wrap; }
-    .row input, .row select { flex: 1 1 320px; padding:10px; margin:6px 0; }
+    .row input, .row select {
+      flex: 1 1 320px;
+      padding: 12px 14px;
+      margin: 6px 0;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 16px;
+    }
 
-    .section { border:1px solid #ccc; padding:15px; margin-top:20px; background:#fff; border-radius:8px; }
+    .section {
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-top: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: var(--shadow-sm);
+    }
 
     .list-item { display:flex; gap:10px; align-items:center; justify-content:space-between; }
     .list-left { min-width: 0; flex: 1 1 auto; }
     .muted { color:#666; font-size: 12px; word-break: break-all; }
 
     .btn{
-      padding: 8px 12px;
-      border: 1px solid #bbb;
-      background: #e6e6e6;
+      min-height: 42px;
+      padding: 8px 14px;
+      border: 1px solid var(--border-strong);
+      background: linear-gradient(180deg, #ffffff 0%, #eff4fd 100%);
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 11px;
       font-family: inherit;
+      font-weight: 700;
     }
-    .btn:hover{ background:#dcdcdc; }
+    .btn:hover{ box-shadow: var(--shadow-sm); }
 
-    .danger { background:#b00020; color:white; border:none; padding:8px 10px; cursor:pointer; border-radius:6px; }
+    .danger {
+      background: linear-gradient(180deg, #d33755 0%, #b71f3e 100%);
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      cursor: pointer;
+      border-radius: 11px;
+      min-height: 42px;
+      font-weight: 700;
+    }
     .danger:hover { opacity:0.9; }
 
     .updateBtn{
-      background:#2d6cdf;
+      background: linear-gradient(180deg, #3f7ce4 0%, #2d6cdf 100%);
       color:#fff;
       border:none;
       padding:8px 10px;
       cursor:pointer;
-      border-radius:6px;
+      border-radius:11px;
       margin-right: 8px;
+      min-height: 42px;
+      font-weight: 700;
     }
     .updateBtn:hover{ opacity:0.9; }
 
-    .pill { display:inline-block; padding:3px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; background:#f3f3f3; }
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f1f5fc;
+    }
 
     .modeBox{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; }
     .modeBtn{
       padding: 5px 10px;
       border-radius: 999px;
-      border: 1px solid #bbb;
-      background: #f3f3f3;
+      border: 1px solid var(--border-strong);
+      background: #f1f5fc;
       cursor:pointer;
       font-size: 12px;
+      font-weight: 700;
     }
     .modeBtn.active{
       background: #b9e4b9;
@@ -97,8 +149,8 @@
     }
     .catSelect{
       padding: 4px 8px;
-      border: 1px solid #bbb;
-      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
       background: #fff;
       font-size: 12px;
     }
@@ -108,15 +160,15 @@
     .moveBtn{
       width: 34px;
       height: 30px;
-      border: 1px solid #bbb;
-      background: #f3f3f3;
-      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: #f1f5fc;
+      border-radius: 8px;
       cursor: pointer;
       line-height: 1;
       font-size: 16px;
       padding: 0;
     }
-    .moveBtn:hover{ background:#e7e7e7; }
+    .moveBtn:hover{ box-shadow: var(--shadow-sm); }
     .moveBtn:disabled{ opacity:.45; cursor:default; }
     .modeHintChanged{ color:#2d6cdf; font-weight:600; }
     hr{ border:none; border-top:1px solid #ddd; margin: 12px 0; }
@@ -409,12 +461,14 @@ function renderSuggestions(items) {
   const html = items.map(s => {
     const addr = s.menuUrl && s.menuUrl.trim() ? s.menuUrl.trim() : "neuvedeno";
     const who = (s.submitter && s.submitter.trim()) ? s.submitter.trim() : "neuvedeno";
+    const note = (s.note && s.note.trim()) ? s.note.trim() : "";
     return `
       <div class="list-item">
         <div class="list-left">
           <div><b>${escapeHtml(s.name)}</b></div>
           <div class="muted">${escapeHtml(addr)}</div>
           <div class="muted">Jméno: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
+          ${note ? `<div class="muted">Poznámka: ${escapeHtml(note)}</div>` : ""}
         </div>
         <div>
           <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(s.id)}', '${escapeHtmlAttr(s.name)}')">Smazat</button>
