@@ -353,6 +353,12 @@ textarea {
   font-weight: 800;
 }
 
+.meal-day-heading {
+  margin: 14px 0 8px;
+  font-weight: 800;
+  color: #f1f6ff;
+}
+
 .small-muted {
   color: var(--muted);
 }

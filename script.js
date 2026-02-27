@@ -143,6 +143,26 @@ function getMealsForDayScope(meals) {
   return list.filter((m) => getMealIsoDate(m) === targetIso);
 }
 
+function formatIsoToCzDateLabel(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return formatCzDateLabel(date);
+}
+
+function getMealDayGroupLabel(meal) {
+  const dayText = String(meal?.day || "").trim();
+  if (dayText) return dayText;
+
+  const iso = getMealIsoDate(meal);
+  if (iso) {
+    const label = formatIsoToCzDateLabel(iso);
+    if (label) return label;
+  }
+
+  return "Bez data";
+}
+
 /* ===== URL HELPERS ===== */
 
 function isPdfUrl(url) {
@@ -1030,7 +1050,7 @@ function renderMenus() {
     }
 
     if (meals.length) {
-      meals.forEach((m) => {
+      const renderMeal = (m) => {
         const mealName = stripTrailingMenuDate(m.name);
         const mealDiv = document.createElement("div");
         mealDiv.className = "meal";
@@ -1047,7 +1067,33 @@ function renderMenus() {
         scheduleKcalEstimate(kcalEl, mealName);
         renderVegetarianEstimate(vegEl, mealName);
         div.appendChild(mealDiv);
-      });
+      };
+
+      if (currentDayScope === "week") {
+        const groups = [];
+        const byLabel = new Map();
+
+        meals.forEach((m) => {
+          const label = getMealDayGroupLabel(m);
+          if (!byLabel.has(label)) {
+            const bucket = [];
+            byLabel.set(label, bucket);
+            groups.push({ label, items: bucket });
+          }
+          byLabel.get(label).push(m);
+        });
+
+        groups.forEach((g) => {
+          const dayHeading = document.createElement("div");
+          dayHeading.className = "meal-day-heading";
+          dayHeading.textContent = g.label;
+          div.appendChild(dayHeading);
+
+          g.items.forEach(renderMeal);
+        });
+      } else {
+        meals.forEach(renderMeal);
+      }
     } else if (currentDayScope !== "week") {
       const msg = document.createElement("div");
       msg.className = "small-muted";
