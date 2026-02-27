@@ -144,7 +144,7 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  opacity: 0.10; /* více průhledné */
+  opacity: 0.067; /* o dalších ~33 % průhlednější */
   z-index: 0;
   pointer-events: none;
 }
