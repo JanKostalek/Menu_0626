@@ -108,13 +108,20 @@
 }
 
 .admin-icon-btn {
-  padding: 4px 10px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  line-height: 0;
 }
 
 .admin-icon-btn img {
   display: block;
-  width: 92px;
+  width: 46px;
   height: auto;
+}
+
+.admin-icon-btn:hover {
+  background: transparent !important;
 }
 
 /* ===== LAYOUT ===== */
