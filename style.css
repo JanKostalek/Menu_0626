@@ -181,10 +181,12 @@ body {
 
 .filter-btn {
   position: relative;
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px;
+  align-items: center;
   width: 88%;
   min-height: 90px;
-  padding: 14px 84px 14px 16px;
+  padding: 0;
   font-size: 24px;
   line-height: 1.1;
   margin-bottom: 10px;
@@ -211,10 +213,8 @@ body {
 }
 
 .filter-btn__icon {
-  position: absolute;
-  right: 9px;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-column: 2;
+  justify-self: center;
   width: 42px;
   height: 42px;
   object-fit: contain;
@@ -223,16 +223,20 @@ body {
 }
 
 .filter-btn__label {
+  grid-column: 1;
+  padding: 14px 16px;
   display: -webkit-box;
   max-width: 100%;
   min-width: 0;
   font-size: inherit;
   white-space: normal;
   overflow: hidden;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  z-index: 1;
 }
 
 .filter-btn:hover {
