@@ -907,7 +907,10 @@ function renderMenus() {
   filtered.forEach((r) => {
     const div = document.createElement("div");
     div.className = "restaurant";
-    div.innerHTML = `<h3>${escapeHtml(r.name)}</h3>`;
+    const meals = Array.isArray(r.meals) ? r.meals : [];
+    const days = Array.from(new Set(meals.map((m) => String(m?.day || "").trim()).filter(Boolean)));
+    const daySummary = days.length ? ` <span class="small-muted">(${escapeHtml(days.join(", "))})</span>` : "";
+    div.innerHTML = `<h3>${escapeHtml(r.name)}${daySummary}</h3>`;
 
     const url = r.url ? String(r.url) : "";
     const mode = String(r.mode || "parse").toLowerCase();
@@ -918,17 +921,15 @@ function renderMenus() {
       else div.appendChild(buildWebBlock(url, mode));
     }
 
-    const meals = Array.isArray(r.meals) ? r.meals : [];
     if (meals.length) {
       meals.forEach((m) => {
         const mealDiv = document.createElement("div");
         mealDiv.className = "meal";
         const price = m.price ? `${m.price} Kč` : "—";
-        const day = m.day ? `(${m.day})` : "";
         const kcalId = `kcal-${Math.random().toString(36).slice(2, 10)}`;
         const vegId = `veg-${Math.random().toString(36).slice(2, 10)}`;
         mealDiv.innerHTML = `
-          <div><b>${escapeHtml(m.name)}</b> ${escapeHtml(day)}</div>
+          <div><b>${escapeHtml(m.name)}</b></div>
           <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span> <span id="${vegId}" class="meal-meta-icon"></span></div>
           <hr>
         `;
