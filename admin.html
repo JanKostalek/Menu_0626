@@ -459,18 +459,25 @@ function renderSuggestions(items) {
     return;
   }
 
+  const pickSuggestionNote = (s) => {
+    if (!s || typeof s !== "object") return "";
+    const payload = (s.payload && typeof s.payload === "object") ? s.payload : {};
+    const meta = (s.meta && typeof s.meta === "object") ? s.meta : {};
+    const raw = s.note ?? s.comment ?? s.text ?? s.message ?? s.notes ?? s.poznamka ?? payload.note ?? payload.comment ?? payload.text ?? payload.message ?? meta.note ?? meta.comment ?? meta.text ?? meta.message ?? "";
+    return String(raw || "").trim();
+  };
+
   const html = items.map(s => {
     const addr = s.menuUrl && s.menuUrl.trim() ? s.menuUrl.trim() : "neuvedeno";
     const who = (s.submitter && s.submitter.trim()) ? s.submitter.trim() : "neuvedeno";
-    const noteRaw = s.note ?? s.comment ?? s.text ?? s.message ?? s.notes ?? "";
-    const note = (String(noteRaw).trim()) ? String(noteRaw).trim() : "";
+    const note = pickSuggestionNote(s);
     return `
       <div class="list-item">
         <div class="list-left">
           <div><b>${escapeHtml(s.name)}</b></div>
           <div class="muted">${escapeHtml(addr)}</div>
           <div class="muted">Jméno: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
-          ${note ? `<div class="muted suggestion-note">Poznámka: ${escapeHtml(note)}</div>` : ""}
+          <div class="muted suggestion-note">Poznámka: ${escapeHtml(note || "neuvedeno")}</div>
         </div>
         <div>
           <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(s.id)}', '${escapeHtmlAttr(s.name)}')">Smazat</button>
