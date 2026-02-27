@@ -17,19 +17,19 @@ const LS_MENU_CACHE_DATE_ALL = "menu03_menu_cache_date_all";
 const LS_RESTAURANTS_SIG = "menu03_restaurants_sig";
 
 /**
- * DomÃ©ny, kterÃ© typicky blokujÃ­ vloÅ¾enÃ­ do iframe (X-Frame-Options / CSP).
+ * Domï¿½ny, kterï¿½ typicky blokujï¿½ vloï¿½enï¿½ do iframe (X-Frame-Options / CSP).
  */
 const EMBED_BLOCKED_DOMAINS = [
   "holidayinn.cz",
 ];
 
 const RESTAURANT_CATEGORY_META = {
-  ceska: { label: "ÄŒeskÃ¡", icon: "/icons/ceska.png" },
-  cina: { label: "ÄŒÃ­na", icon: "/icons/cina.png" },
-  italska: { label: "ItalskÃ¡", icon: "/icons/italska.png" },
-  mexicka: { label: "MexickÃ¡", icon: "/icons/mexicka.png" },
+  ceska: { label: "Česká", icon: "/icons/ceska.png" },
+  cina: { label: "Čína", icon: "/icons/cina.png" },
+  italska: { label: "Italská", icon: "/icons/italska.png" },
+  mexicka: { label: "Mexická", icon: "/icons/mexicka.png" },
   burger: { label: "Burger", icon: "/icons/burger.png" },
-  kavarna: { label: "KavÃ¡rna", icon: "/icons/kavarna.png" },
+  kavarna: { label: "Kavárna", icon: "/icons/kavarna.png" },
 };
 const VEG_ICON_YES = "/icons/vegetarian-yes.png";
 const VEG_ICON_NO = "/icons/vegetarian-no.png";
@@ -165,17 +165,17 @@ function buildPdfBlock(url) {
   wrap.innerHTML = `
     <div class="source-actions">
       <button type="button" class="btn-action js-open-popup" data-url="${escapeHtmlAttr(url)}">
-        ${iconExternal()} <span>OtevÅ™Ã­t PDF</span>
+        ${iconExternal()} <span>Otevřít PDF</span>
       </button>
     </div>
 
     ${
       blocked
         ? `<div class="source-note source-note--warn">
-             OtevÅ™enÃ­ menu je blokovÃ¡no zdrojovou strÃ¡nkou. PouÅ¾ijte prosÃ­m tlaÄÃ­tko vÃ½Å¡e k jeho otevÅ™enÃ­.
+             Otevření menu je blokováno zdrojovou stránkou. Použijte prosím tlačítko výše k jeho otevření.
            </div>`
         : `<div class="source-note">
-             Pokud se nÃ¡hled nezobrazÃ­, pouÅ¾ijte tlaÄÃ­tko <b>OtevÅ™Ã­t PDF</b> vÃ½Å¡e.
+             Pokud se náhled nezobrazí, použijte tlačítko <b>Otevřít PDF</b> výše.
            </div>
            <div class="pdf-wrap">
              <iframe class="pdf-frame" src="${escapeHtmlAttr(url)}"></iframe>
@@ -192,7 +192,7 @@ function buildImageBlock(url) {
   wrap.innerHTML = `
     <div class="source-actions">
       <a class="btn-action" href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer">
-        ${iconExternal()} <span>OtevÅ™Ã­t obrÃ¡zek</span>
+        ${iconExternal()} <span>Otevřít obrázek</span>
       </a>
     </div>
 
@@ -212,7 +212,7 @@ function buildWebBlock(url, mode) {
   let inner = `
     <div class="source-actions">
       <button type="button" class="btn-action js-open-popup" data-url="${escapeHtmlAttr(url)}">
-        ${iconExternal()} <span>OtevÅ™Ã­t zdroj</span>
+        ${iconExternal()} <span>Otevřít zdroj</span>
       </button>
     </div>
   `;
@@ -221,13 +221,13 @@ function buildWebBlock(url, mode) {
     if (blocked) {
       inner += `
         <div class="source-note source-note--warn">
-          OtevÅ™enÃ­ menu je blokovÃ¡no zdrojovou strÃ¡nkou. PouÅ¾ijte prosÃ­m tlaÄÃ­tko vÃ½Å¡e k jeho otevÅ™enÃ­.
+          Otevření menu je blokováno zdrojovou stránkou. Použijte prosím tlačítko výše k jeho otevření.
         </div>
       `;
     } else {
       inner += `
         <div class="source-note">
-          Pokud se nÃ¡hled nezobrazÃ­, pouÅ¾ijte tlaÄÃ­tko <b>OtevÅ™Ã­t zdroj</b> vÃ½Å¡e.
+          Pokud se náhled nezobrazí, použijte tlačítko <b>Otevřít zdroj</b> výše.
         </div>
         <div class="web-wrap">
           <iframe class="web-frame" src="${escapeHtmlAttr(url)}"></iframe>
@@ -422,7 +422,7 @@ function renderVegetarianEstimate(el, mealName) {
 
   const isVeg = estimateVegetarianMeal(mealName);
   const src = isVeg ? VEG_ICON_YES : VEG_ICON_NO;
-  const title = isVeg ? "VegetariÃ¡nskÃ© (odhad)" : "NenÃ­ vegetariÃ¡nskÃ© (odhad)";
+  const title = isVeg ? "Vegetariánské (odhad)" : "Není vegetariánské (odhad)";
 
   el.innerHTML = `
     <img
@@ -443,43 +443,43 @@ function buildUsdaQueryCandidates(mealName) {
   let q = ` ${original.toLowerCase()} `;
 
   const phraseReplacements = [
-    [/kuÅ™ecÃ­\s+vÃ½var/g, " chicken broth soup "],
-    [/hovÄ›zÃ­\s+vÃ½var/g, " beef broth soup "],
-    [/zeleninov[Ã½Ã¡]\s+vÃ½var/g, " vegetable broth soup "],
-    [/rajsk[Ã¡a]|tomatov[Ã¡a]/g, " tomato "],
-    [/pol[Ã©e]vka/g, " soup "],
-    [/kr[eÃ©]m\b/g, " cream soup "],
-    [/Å™Ã­zek|rizek/g, " schnitzel "],
-    [/smaÅ¾en[Ã½aÃ©]/g, " fried "],
-    [/kuÅ™ec[Ã­i]/g, " chicken "],
-    [/vepÅ™ov[Ã©eÃ­]/g, " pork "],
-    [/hovÄ›z[Ã­i]/g, " beef "],
-    [/krÅ¯t[Ã­i]/g, " turkey "],
+    [/kureci\s+vyvar/g, " chicken broth soup "],
+    [/hovezi\s+vyvar/g, " beef broth soup "],
+    [/zeleninov[ya]\s+vyvar/g, " vegetable broth soup "],
+    [/rajska|rajska|tomatov[ya]/g, " tomato "],
+    [/polevka/g, " soup "],
+    [/krem\b/g, " cream soup "],
+    [/rizek/g, " schnitzel "],
+    [/smazen[yae]/g, " fried "],
+    [/kurec[iy]/g, " chicken "],
+    [/veprov[eyi]/g, " pork "],
+    [/hovez[iy]/g, " beef "],
+    [/krut[iy]/g, " turkey "],
     [/losos/g, " salmon "],
-    [/sÃ½r/g, " cheese "],
-    [/bramborov[Ã¡aÃ©Ã½]/g, " potato "],
+    [/syr/g, " cheese "],
+    [/bramborov[yaey]/g, " potato "],
     [/brambor/g, " potato "],
-    [/kaÅ¡[ei]/g, " mash "],
-    [/rÃ½Å¾e/g, " rice "],
+    [/kas[eiy]/g, " mash "],
+    [/ryze|rize/g, " rice "],
     [/hranolky/g, " french fries "],
-    [/tÄ›stoviny/g, " pasta "],
+    [/testoviny/g, " pasta "],
     [/gnocchi/g, " gnocchi "],
-    [/gulÃ¡Å¡/g, " goulash "],
-    [/svÃ­ÄkovÃ¡/g, " sirloin cream sauce "],
-    [/sekanÃ¡/g, " meatloaf "],
-    [/salÃ¡t|salÃ¡tek/g, " salad "],
+    [/gulas/g, " goulash "],
+    [/svickova/g, " sirloin cream sauce "],
+    [/sekana/g, " meatloaf "],
+    [/salat|salatek/g, " salad "],
     [/cous\s*cous/g, " couscous "],
-    [/ÄoÄk[ay]/g, " lentils "],
-    [/fazolov[Ã¡a]/g, " bean "],
-    [/cizrnov[Ã¡a]/g, " chickpea "],
-    [/Å¡penÃ¡t/g, " spinach "],
+    [/cocka/g, " lentils "],
+    [/fazolov[ya]/g, " bean "],
+    [/cizrnov[ya]/g, " chickpea "],
+    [/spenat/g, " spinach "],
     [/brokolice/g, " broccoli "],
-    [/kvÄ›tÃ¡k/g, " cauliflower "],
-    [/smetanov[Ã¡aÃ©]/g, " cream "],
-    [/omÃ¡Äk[ayou]/g, " sauce "],
-    [/knedl[iÃ­]k/g, " dumplings "],
-    [/peÄen[Ã½aÃ©]/g, " roasted "],
-    [/grilovan[Ã½aÃ©]/g, " grilled "],
+    [/kvetak/g, " cauliflower "],
+    [/smetanov[yae]/g, " cream "],
+    [/omack[ayou]/g, " sauce "],
+    [/knedlik/g, " dumplings "],
+    [/pecen[yae]/g, " roasted "],
+    [/grilovan[yae]/g, " grilled "],
     [/pizza/g, " pizza "],
     [/burger/g, " burger "],
   ];
@@ -510,9 +510,9 @@ function buildUsdaQueryCandidates(mealName) {
 
   add(generic);
   add(generic + " dish");
-  add(original); // fallback na pÅ¯vodnÃ­ CZ nÃ¡zev
+  add(original); // fallback na puvodnï¿½ CZ nï¿½zev
 
-  // KratÅ¡Ã­ fallback jen prvnÃ­ch pÃ¡r slov (Äasto pomÅ¯Å¾e USDA search)
+  // Kratï¿½ï¿½ fallback jen prvnï¿½ch pï¿½r slov (casto pomuï¿½e USDA search)
   const words = generic.split(/\s+/).filter(Boolean);
   if (words.length > 2) add(words.slice(0, 2).join(" "));
   if (words.length > 3) add(words.slice(0, 3).join(" "));
@@ -524,9 +524,9 @@ function parsePortionEstimate(mealName) {
   const raw = String(mealName || "");
   const s = raw.toLowerCase();
 
-  const isSoup = /pol[eÃ©]v|v[Ã½y]var|kr[eÃ©]m|minestrone|dr[Å¡s]tkov|bor[Å¡s]Ä|kulajd|gul[aÃ¡]Å¡ov[aÃ¡]\s+pol/i.test(s);
-  const isSalad = /sal[aÃ¡]t|caesar|poke|bowl/i.test(s);
-  const isDessert = /palaÄink|l[Ã­i]vanc|buchti|Å¡kub[aÃ¡]nk|kaÅ¡e s m[aÃ¡]kem|dezert/i.test(s);
+  const isSoup = /polev|vyvar|krem|minestrone|drstkov|borsc|kulajd|gulasov[a]?\s+pol/i.test(s);
+  const isSalad = /salat|caesar|poke|bowl/i.test(s);
+  const isDessert = /palacink|livanc|buchti|skubank|kase s makem|dezert/i.test(s);
   const isPizza = /pizza/i.test(s);
 
   // "0,3l", "0, 3l", "300 ml"
@@ -548,7 +548,7 @@ function parsePortionEstimate(mealName) {
     if (Number.isFinite(num) && num > 0) {
       const grams = unit === "kg" ? Math.round(num * 1000) : Math.round(num);
 
-      // U hlavnÃ­ch jÃ­del bÃ½vÃ¡ uvedenÃ¡ jen gramÃ¡Å¾ masa (napÅ™. 120g), pÅ™Ã­lohu dopoÄÃ­tÃ¡me.
+      // U hlavnï¿½ch jï¿½del bï¿½vï¿½ uvedenï¿½ jen gramï¿½ masa (napr. 120g), prï¿½lohu dopocï¿½tï¿½me.
       if (!isSoup && grams >= 80 && grams <= 220) {
         const side = isSalad ? 120 : 250;
         return { grams: grams + side, source: "explicit-protein-plus-side" };
@@ -565,16 +565,16 @@ function parsePortionEstimate(mealName) {
 }
 
 function formatKcalEstimateText(mealName, kcalPer100g) {
-  if (typeof kcalPer100g !== "number") return " â€¢ kcal odhad nedostupnÃ½";
+  if (typeof kcalPer100g !== "number") return " • kcal odhad nedostupný";
 
   const portion = parsePortionEstimate(mealName);
   const grams = portion?.grams;
   if (!grams || !Number.isFinite(grams) || grams <= 0) {
-    return ` â€¢ pÅ™ibl. ${kcalPer100g} kcal / 100 g`;
+    return ` • přibl. ${kcalPer100g} kcal / 100 g`;
   }
 
   const portionKcal = Math.round((kcalPer100g * grams) / 100);
-  return ` â€¢ pÅ™ibl. ${portionKcal} kcal / porce (~${grams} g)`;
+  return ` • přibl. ${portionKcal} kcal / porce (~${grams} g)`;
 }
 
 async function fetchApproxKcal(mealName) {
@@ -619,14 +619,14 @@ function scheduleKcalEstimate(el, mealName) {
   const mealKey = normalizeMealForKcalQuery(mealName);
   if (!mealKey) return;
 
-  // okamÅ¾itÄ› z cache
+  // okamï¿½ite z cache
   if (kcalCache.has(mealKey)) {
     const kcal = kcalCache.get(mealKey);
     el.textContent = formatKcalEstimateText(mealName, kcal);
     return;
   }
 
-  el.textContent = " â€¢ odhad kcalâ€¦";
+  el.textContent = " • odhad kcal…";
 
   fetchApproxKcal(mealName).then((kcal) => {
     if (!document.body.contains(el)) return;
@@ -678,8 +678,8 @@ function fitRestaurantButtonLabels(container) {
     const fullWidth = measureTextWidthPx(fullName, font);
     if (fullWidth <= maxWidth) return;
 
-    // PÅ™eteÄe-li text do ikonovÃ© (bÃ­lÃ©) ÄÃ¡sti, rozdÄ›lÃ­me nÃ¡zev do 2 Å™Ã¡dkÅ¯
-    // podle reÃ¡lnÄ› mÄ›Å™enÃ© Å¡Ã­Å™ky Å™Ã¡dkÅ¯.
+    // Pretece-li text do ikonovï¿½ (bï¿½lï¿½) cï¿½sti, rozdelï¿½me nï¿½zev do 2 rï¿½dku
+    // podle reï¿½lne merenï¿½ ï¿½ï¿½rky rï¿½dku.
     let best = null;
     for (let i = 1; i < words.length; i++) {
       const left = words.slice(0, i).join(" ");
@@ -707,13 +707,13 @@ function renderFilters() {
   if (!container) return;
 
   if (!restaurantsList || restaurantsList.length === 0) {
-    container.innerHTML = `<div class="small-muted">ZatÃ­m Å¾Ã¡dnÃ© restaurace.</div>`;
+    container.innerHTML = `<div class="small-muted">Zatím žádné restaurace.</div>`;
     return;
   }
 
   const visibleRestaurants = restaurantsList.filter((r) => isRestaurantAllowedByCategory(r));
   if (!visibleRestaurants.length) {
-    container.innerHTML = `<div class="small-muted">Pro zvolenÃ½ typ nebyla nalezena Å¾Ã¡dnÃ¡ restaurace.</div>`;
+    container.innerHTML = `<div class="small-muted">Pro zvolený typ nebyla nalezena žádná restaurace.</div>`;
     return;
   }
 
@@ -756,16 +756,16 @@ function setDefaultFirstVisitState() {
 /* ===== RESTAURANTS LIST ===== */
 
 async function loadRestaurantsList() {
-  // TypovÃ½ filtr se po naÄtenÃ­ strÃ¡nky vÅ¾dy resetuje na "VÅ¡echny restaurace".
+  // Typovï¿½ filtr se po nactenï¿½ strï¿½nky vï¿½dy resetuje na "Vï¿½echny restaurace".
   clearCategoryFilters();
 
   try {
     const resp = await fetch("/api/restaurants", { cache: "no-store" });
     const data = await resp.json();
 
-    // podporujeme oba formÃ¡ty:
-    // 1) starÃ½: API vracÃ­ pÅ™Ã­mo pole restauracÃ­
-    // 2) novÃ½: API vracÃ­ objekt { restaurants: [...], updatedAt: ... }
+    // podporujeme oba formï¿½ty:
+    // 1) starï¿½: API vracï¿½ prï¿½mo pole restauracï¿½
+    // 2) novï¿½: API vracï¿½ objekt { restaurants: [...], updatedAt: ... }
     if (Array.isArray(data)) {
       restaurantsList = data;
     } else if (data && Array.isArray(data.restaurants)) {
@@ -777,7 +777,7 @@ async function loadRestaurantsList() {
     restaurantsList = [];
   }
 
-  // pokud se zmÄ›nil seznam restauracÃ­ => vymaÅ¾ lokÃ¡lnÃ­ menu cache
+  // pokud se zmenil seznam restauracï¿½ => vymaï¿½ lokï¿½lnï¿½ menu cache
   try {
     const sig = computeRestaurantsSig(restaurantsList);
     const prev = localStorage.getItem(LS_RESTAURANTS_SIG) || "";
@@ -787,7 +787,7 @@ async function loadRestaurantsList() {
     }
   } catch {}
 
-  // Po otevÅ™enÃ­ strÃ¡nky zaÄÃ­nÃ¡ bez vybranÃ© restaurace.
+  // Po otevrenï¿½ strï¿½nky zacï¿½nï¿½ bez vybranï¿½ restaurace.
   setDefaultFirstVisitState();
 
   renderCategoryFilterBar();
@@ -844,7 +844,7 @@ async function loadMenus(type) {
   try {
     const resp = await fetch("/api/getMenus?type=" + encodeURIComponent(type), { cache: "no-store" });
     const data = await resp.json();
-    if (!Array.isArray(data)) throw new Error("API vrÃ¡tilo neoÄekÃ¡vanÃ½ formÃ¡t");
+    if (!Array.isArray(data)) throw new Error("API vrátilo neočekávaný formát");
     menusCache = data;
     saveLocalCache(type, data);
   } catch (e) {
@@ -861,8 +861,8 @@ async function loadMenus(type) {
 function renderEmptySelectionState(container) {
   container.innerHTML = `
     <div class="empty-state">
-      <div class="empty-state__title">MÃ¡Å¡ hlad? MÃ¡Å¡ na nÄ›co chuÅ¥? Tak si pojÄ nÄ›co vybrat.</div>
-      <div class="empty-state__subtitle">Pokud tu nevidÃ­Å¡ svoji oblÃ­benou restauraci, povÄ›z nÃ¡m o ni pomocÃ­ tlaÄÃ­tka nahoÅ™e.</div>
+      <div class="empty-state__title">Máš hlad? Máš na něco chuť? Tak si pojď něco vybrat.</div>
+      <div class="empty-state__subtitle">Pokud tu nevidíš svoji oblíbenou restauraci, pověz nám o ni pomocí tlačítka nahoře.</div>
     </div>
   `;
 }
@@ -874,18 +874,18 @@ function renderMenus() {
   container.innerHTML = "";
 
   if (menuLoading) {
-    container.innerHTML = `<div class="restaurant"><div class="small-muted">NaÄÃ­tÃ¡m menuâ€¦</div></div>`;
+    container.innerHTML = `<div class="restaurant"><div class="small-muted">Načítám menu…</div></div>`;
     return;
   }
 
   if (menuError) {
-    container.innerHTML = `<div class="restaurant"><div class="small-muted"><b>Chyba naÄÃ­tÃ¡nÃ­ menu:</b><br>${escapeHtml(menuError)}</div></div>`;
+    container.innerHTML = `<div class="restaurant"><div class="small-muted"><b>Chyba načítání menu:</b><br>${escapeHtml(menuError)}</div></div>`;
     return;
   }
 
   if (!menusCache || menusCache.length === 0) {
     if (hasAnySelected()) {
-      container.innerHTML = `<div class="restaurant"><div class="small-muted">Menu se nepodaÅ™ilo naÄÃ­st. Zkus obnovit strÃ¡nku.</div></div>`;
+      container.innerHTML = `<div class="restaurant"><div class="small-muted">Menu se nepodařilo načíst. Zkus obnovit stránku.</div></div>`;
     } else {
       renderEmptySelectionState(container);
     }
@@ -925,12 +925,12 @@ function renderMenus() {
       meals.forEach((m) => {
         const mealDiv = document.createElement("div");
         mealDiv.className = "meal";
-        const price = m.price ? `${m.price} KÄ` : "â€”";
+        const price = m.price ? `${m.price} Kč` : "—";
         const kcalId = `kcal-${Math.random().toString(36).slice(2, 10)}`;
         const vegId = `veg-${Math.random().toString(36).slice(2, 10)}`;
         mealDiv.innerHTML = `
           <div><b>${escapeHtml(m.name)}</b></div>
-          <div>ðŸ’° ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span> <span id="${vegId}" class="meal-meta-icon"></span></div>
+          <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span> <span id="${vegId}" class="meal-meta-icon"></span></div>
           <hr>
         `;
         const kcalEl = mealDiv.querySelector(`#${kcalId}`);
@@ -956,12 +956,12 @@ function renderMenus() {
 /* ===== TOP-RIGHT BUTTONS (index.html) ===== */
 
 function openSuggestion() {
-  // bezpeÄnÃ© (neblokuje popup blocker)
+  // bezpecnï¿½ (neblokuje popup blocker)
   openPopup("/suggest.html");
 }
 
 function openAdmin() {
-  // Heslo se Å™eÅ¡Ã­ aÅ¾ v admin.html (aÅ¥ se to neptÃ¡ 2Ã—)
+  // Heslo se reï¿½ï¿½ aï¿½ v admin.html (at se to neptï¿½ 2ï¿½)
   openPopup("/admin.html");
 }
 
@@ -987,4 +987,6 @@ window.addEventListener("resize", () => {
   const container = document.getElementById("filterContainer");
   fitRestaurantButtonLabels(container);
 });
+
+
 
