@@ -183,13 +183,12 @@ body {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 62px;
-  align-items: stretch;
+  align-items: center;
   width: 88%;
-  height: auto;
-  min-height: 84px;
+  min-height: 62px;
   padding: 0;
-  font-size: 24px;
-  line-height: 1;
+  font-size: 16px;
+  line-height: 1.2;
   margin-bottom: 10px;
   margin-left: auto;
   margin-right: auto;
@@ -220,8 +219,8 @@ body {
   align-self: center;
   justify-self: center;
   display: block;
-  width: 42px;
-  height: 42px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   opacity: 0.9;
   z-index: 1;
@@ -229,16 +228,20 @@ body {
 
 .sidebar .filter-btn__label {
   grid-column: 1;
-  display: block;
+  display: -webkit-box;
   align-self: center;
-  padding: 0 14px;
+  padding: 8px 12px;
   max-width: 100%;
   min-width: 0;
   font-size: inherit;
-  line-height: 1.1;
+  line-height: 1.2;
   white-space: normal;
+  overflow: hidden;
   word-break: normal;
   overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   z-index: 1;
 }
 
