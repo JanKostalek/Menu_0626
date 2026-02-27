@@ -462,7 +462,8 @@ function renderSuggestions(items) {
   const html = items.map(s => {
     const addr = s.menuUrl && s.menuUrl.trim() ? s.menuUrl.trim() : "neuvedeno";
     const who = (s.submitter && s.submitter.trim()) ? s.submitter.trim() : "neuvedeno";
-    const note = (s.note && s.note.trim()) ? s.note.trim() : "";
+    const noteRaw = s.note ?? s.comment ?? s.text ?? s.message ?? s.notes ?? "";
+    const note = (String(noteRaw).trim()) ? String(noteRaw).trim() : "";
     return `
       <div class="list-item">
         <div class="list-left">

@@ -203,7 +203,16 @@
       const resp = await fetch("/api/suggestions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, menuUrl, submitter, email, note })
+        body: JSON.stringify({
+          name,
+          menuUrl,
+          submitter,
+          email,
+          note,
+          comment: note,
+          text: note,
+          message: note
+        })
       });
 
       const data = await resp.json().catch(() => ({}));
