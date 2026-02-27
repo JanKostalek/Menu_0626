@@ -183,12 +183,13 @@ body {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 62px;
-  align-items: center;
+  align-items: stretch;
   width: 88%;
-  min-height: 58px;
+  height: 84px;
+  min-height: 84px;
   padding: 0;
   font-size: 24px;
-  line-height: 1.1;
+  line-height: 1;
   margin-bottom: 10px;
   margin-left: auto;
   margin-right: auto;
@@ -198,6 +199,8 @@ body {
   cursor: pointer;
   text-align: left;
   overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .filter-btn::after {
@@ -214,7 +217,9 @@ body {
 
 .filter-btn__icon {
   grid-column: 2;
+  align-self: center;
   justify-self: center;
+  display: block;
   width: 42px;
   height: 42px;
   object-fit: contain;
@@ -226,12 +231,13 @@ body {
   grid-column: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   height: 100%;
-  padding: 0 16px;
+  padding: 0 14px;
   max-width: 100%;
   min-width: 0;
   font-size: inherit;
-  line-height: 1.15;
+  line-height: 1.05;
   white-space: normal;
   word-break: normal;
   overflow-wrap: break-word;
