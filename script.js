@@ -1,6 +1,7 @@
 ﻿let restaurantsList = [];
 let menusCache = [];
 let currentType = "today";
+let currentDayScope = "today";
 let menuLoading = false;
 let menuError = "";
 const kcalCache = new Map();
@@ -17,7 +18,7 @@ const LS_MENU_CACHE_DATE_ALL = "menu03_menu_cache_date_all";
 const LS_RESTAURANTS_SIG = "menu03_restaurants_sig";
 
 /**
- * Domï¿½ny, kterï¿½ typicky blokujï¿½ vloï¿½enï¿½ do iframe (X-Frame-Options / CSP).
+ * Domény, které typicky blokují vložení do iframe (X-Frame-Options / CSP).
  */
 const EMBED_BLOCKED_DOMAINS = [
   "holidayinn.cz",
@@ -64,6 +65,82 @@ function todayISO() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function pragueDateWithOffset(daysOffset = 0) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const y = Number(parts.find((p) => p.type === "year")?.value || "1970");
+  const m = Number(parts.find((p) => p.type === "month")?.value || "1");
+  const d = Number(parts.find((p) => p.type === "day")?.value || "1");
+
+  const out = new Date(y, m - 1, d);
+  out.setDate(out.getDate() + Number(daysOffset || 0));
+  return out;
+}
+
+function isoFromDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function capitalizeFirst(s) {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatCzDateLabel(dateObj) {
+  const weekday = new Intl.DateTimeFormat("cs-CZ", { weekday: "long" }).format(dateObj);
+  const d = dateObj.getDate();
+  const m = dateObj.getMonth() + 1;
+  const y = dateObj.getFullYear();
+  return `${capitalizeFirst(weekday)} ${d}.${m}.${y}`;
+}
+
+function parseIsoDateFromText(text) {
+  const m = String(text || "").match(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/);
+  if (!m) return null;
+  return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+
+function getMealIsoDate(meal) {
+  if (!meal) return null;
+  return parseIsoDateFromText(meal.day) || parseIsoDateFromText(meal.name) || null;
+}
+
+function stripTrailingMenuDate(mealName) {
+  return String(mealName || "")
+    .replace(/\s*\([^)"]*\d{1,2}\.\s*\d{1,2}\.\s*\d{4}\)\s*$/i, "")
+    .trim();
+}
+
+function getCurrentScopeIsoDate() {
+  if (currentDayScope === "tomorrow") return isoFromDate(pragueDateWithOffset(1));
+  return isoFromDate(pragueDateWithOffset(0));
+}
+
+function getCurrentScopeDateLabel() {
+  if (currentDayScope === "week") return "";
+  if (currentDayScope === "tomorrow") return formatCzDateLabel(pragueDateWithOffset(1));
+  return formatCzDateLabel(pragueDateWithOffset(0));
+}
+
+function getMealsForDayScope(meals) {
+  const list = Array.isArray(meals) ? meals : [];
+  if (currentDayScope === "week") return list;
+
+  const datedMeals = list.filter((m) => !!getMealIsoDate(m));
+  if (!datedMeals.length) return list;
+
+  const targetIso = getCurrentScopeIsoDate();
+  return list.filter((m) => getMealIsoDate(m) === targetIso);
 }
 
 /* ===== URL HELPERS ===== */
@@ -156,6 +233,21 @@ function computeRestaurantsSig(list) {
 
 /* ===== SOURCE BLOCKS ===== */
 
+function buildDayScopeButtonsHtml() {
+  const scopes = [
+    { key: "today", label: "Dnešní menu" },
+    { key: "tomorrow", label: "Zítřejší" },
+    { key: "week", label: "Celý týden" },
+  ];
+
+  return scopes
+    .map((s) => {
+      const active = currentDayScope === s.key ? " active" : "";
+      return `<button type="button" class="btn-action day-scope-btn${active} js-day-scope" data-day-scope="${escapeHtmlAttr(s.key)}">${escapeHtml(s.label)}</button>`;
+    })
+    .join("");
+}
+
 function buildPdfBlock(url) {
   const wrap = document.createElement("div");
   wrap.className = "source-block";
@@ -167,6 +259,7 @@ function buildPdfBlock(url) {
       <button type="button" class="btn-action js-open-popup" data-url="${escapeHtmlAttr(url)}">
         ${iconExternal()} <span>Otevřít PDF</span>
       </button>
+      ${buildDayScopeButtonsHtml()}
     </div>
 
     ${
@@ -194,6 +287,7 @@ function buildImageBlock(url) {
       <a class="btn-action" href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer">
         ${iconExternal()} <span>Otevřít obrázek</span>
       </a>
+      ${buildDayScopeButtonsHtml()}
     </div>
 
     <div class="img-wrap">
@@ -214,6 +308,7 @@ function buildWebBlock(url, mode) {
       <button type="button" class="btn-action js-open-popup" data-url="${escapeHtmlAttr(url)}">
         ${iconExternal()} <span>Otevřít zdroj</span>
       </button>
+      ${buildDayScopeButtonsHtml()}
     </div>
   `;
 
@@ -510,9 +605,9 @@ function buildUsdaQueryCandidates(mealName) {
 
   add(generic);
   add(generic + " dish");
-  add(original); // fallback na puvodnï¿½ CZ nï¿½zev
+  add(original); // fallback na puvodní CZ název
 
-  // Kratï¿½ï¿½ fallback jen prvnï¿½ch pï¿½r slov (casto pomuï¿½e USDA search)
+  // Kratší fallback jen prvních pár slov (často pomůže USDA search)
   const words = generic.split(/\s+/).filter(Boolean);
   if (words.length > 2) add(words.slice(0, 2).join(" "));
   if (words.length > 3) add(words.slice(0, 3).join(" "));
@@ -548,7 +643,7 @@ function parsePortionEstimate(mealName) {
     if (Number.isFinite(num) && num > 0) {
       const grams = unit === "kg" ? Math.round(num * 1000) : Math.round(num);
 
-      // U hlavnï¿½ch jï¿½del bï¿½vï¿½ uvedenï¿½ jen gramï¿½ masa (napr. 120g), prï¿½lohu dopocï¿½tï¿½me.
+      // U hlavních jídel bývá uvedená jen gramáž masa (např. 120g), přílohu dopočítáme.
       if (!isSoup && grams >= 80 && grams <= 220) {
         const side = isSalad ? 120 : 250;
         return { grams: grams + side, source: "explicit-protein-plus-side" };
@@ -619,7 +714,7 @@ function scheduleKcalEstimate(el, mealName) {
   const mealKey = normalizeMealForKcalQuery(mealName);
   if (!mealKey) return;
 
-  // okamï¿½ite z cache
+  // okamžitě z cache
   if (kcalCache.has(mealKey)) {
     const kcal = kcalCache.get(mealKey);
     el.textContent = formatKcalEstimateText(mealName, kcal);
@@ -678,8 +773,8 @@ function fitRestaurantButtonLabels(container) {
     const fullWidth = measureTextWidthPx(fullName, font);
     if (fullWidth <= maxWidth) return;
 
-    // Pretece-li text do ikonovï¿½ (bï¿½lï¿½) cï¿½sti, rozdelï¿½me nï¿½zev do 2 rï¿½dku
-    // podle reï¿½lne merenï¿½ ï¿½ï¿½rky rï¿½dku.
+    // Přeteče-li text do ikonové (bílé) části, rozdělíme název do 2 řádků
+    // podle reálně měřené šířky řádků.
     let best = null;
     for (let i = 1; i < words.length; i++) {
       const left = words.slice(0, i).join(" ");
@@ -756,16 +851,16 @@ function setDefaultFirstVisitState() {
 /* ===== RESTAURANTS LIST ===== */
 
 async function loadRestaurantsList() {
-  // Typovï¿½ filtr se po nactenï¿½ strï¿½nky vï¿½dy resetuje na "Vï¿½echny restaurace".
+  // Typový filtr se po načtení stránky vždy resetuje na "Všechny restaurace".
   clearCategoryFilters();
 
   try {
     const resp = await fetch("/api/restaurants", { cache: "no-store" });
     const data = await resp.json();
 
-    // podporujeme oba formï¿½ty:
-    // 1) starï¿½: API vracï¿½ prï¿½mo pole restauracï¿½
-    // 2) novï¿½: API vracï¿½ objekt { restaurants: [...], updatedAt: ... }
+    // podporujeme oba formáty:
+    // 1) starý: API vrací přímo pole restaurací
+    // 2) nový: API vrací objekt { restaurants: [...], updatedAt: ... }
     if (Array.isArray(data)) {
       restaurantsList = data;
     } else if (data && Array.isArray(data.restaurants)) {
@@ -777,7 +872,7 @@ async function loadRestaurantsList() {
     restaurantsList = [];
   }
 
-  // pokud se zmenil seznam restauracï¿½ => vymaï¿½ lokï¿½lnï¿½ menu cache
+  // pokud se změnil seznam restaurací => vymaž lokální menu cache
   try {
     const sig = computeRestaurantsSig(restaurantsList);
     const prev = localStorage.getItem(LS_RESTAURANTS_SIG) || "";
@@ -787,7 +882,7 @@ async function loadRestaurantsList() {
     }
   } catch {}
 
-  // Po otevrenï¿½ strï¿½nky zacï¿½nï¿½ bez vybranï¿½ restaurace.
+  // Po otevření stránky začíná bez vybrané restaurace.
   setDefaultFirstVisitState();
 
   renderCategoryFilterBar();
@@ -856,6 +951,19 @@ async function loadMenus(type) {
   }
 }
 
+async function setDayScope(scope) {
+  const normalized = (scope === "today" || scope === "tomorrow" || scope === "week") ? scope : "today";
+  currentDayScope = normalized;
+
+  const neededType = normalized === "today" ? "today" : "all";
+  if (currentType !== neededType || !menusCache || menusCache.length === 0) {
+    await loadMenus(neededType);
+    return;
+  }
+
+  renderMenus();
+}
+
 /* ===== RENDER ===== */
 
 function renderEmptySelectionState(container) {
@@ -907,9 +1015,9 @@ function renderMenus() {
   filtered.forEach((r) => {
     const div = document.createElement("div");
     div.className = "restaurant";
-    const meals = Array.isArray(r.meals) ? r.meals : [];
-    const days = Array.from(new Set(meals.map((m) => String(m?.day || "").trim()).filter(Boolean)));
-    const daySummary = days.length ? ` <span class="small-muted">(${escapeHtml(days.join(", "))})</span>` : "";
+    const meals = getMealsForDayScope(r.meals);
+    const scopeLabel = getCurrentScopeDateLabel();
+    const daySummary = scopeLabel ? ` <span class="small-muted">(${escapeHtml(scopeLabel)})</span>` : "";
     div.innerHTML = `<h3>${escapeHtml(r.name)}${daySummary}</h3>`;
 
     const url = r.url ? String(r.url) : "";
@@ -923,22 +1031,28 @@ function renderMenus() {
 
     if (meals.length) {
       meals.forEach((m) => {
+        const mealName = stripTrailingMenuDate(m.name);
         const mealDiv = document.createElement("div");
         mealDiv.className = "meal";
         const price = m.price ? `${m.price} Kč` : "—";
         const kcalId = `kcal-${Math.random().toString(36).slice(2, 10)}`;
         const vegId = `veg-${Math.random().toString(36).slice(2, 10)}`;
         mealDiv.innerHTML = `
-          <div><b>${escapeHtml(m.name)}</b></div>
+          <div><b>${escapeHtml(mealName)}</b></div>
           <div>💰 ${escapeHtml(price)} <span id="${kcalId}" class="small-muted"></span> <span id="${vegId}" class="meal-meta-icon"></span></div>
           <hr>
         `;
         const kcalEl = mealDiv.querySelector(`#${kcalId}`);
         const vegEl = mealDiv.querySelector(`#${vegId}`);
-        scheduleKcalEstimate(kcalEl, m.name);
-        renderVegetarianEstimate(vegEl, m.name);
+        scheduleKcalEstimate(kcalEl, mealName);
+        renderVegetarianEstimate(vegEl, mealName);
         div.appendChild(mealDiv);
       });
+    } else if (currentDayScope !== "week") {
+      const msg = document.createElement("div");
+      msg.className = "small-muted";
+      msg.textContent = "Pro zvolený den není dostupné menu.";
+      div.appendChild(msg);
     }
 
     container.appendChild(div);
@@ -951,17 +1065,24 @@ function renderMenus() {
       openPopup(url);
     });
   });
+
+  container.querySelectorAll(".js-day-scope").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const scope = e.currentTarget.getAttribute("data-day-scope");
+      await setDayScope(scope);
+    });
+  });
 }
 
 /* ===== TOP-RIGHT BUTTONS (index.html) ===== */
 
 function openSuggestion() {
-  // bezpecnï¿½ (neblokuje popup blocker)
+  // bezpečné (neblokuje popup blocker)
   openPopup("/suggest.html");
 }
 
 function openAdmin() {
-  // Heslo se reï¿½ï¿½ aï¿½ v admin.html (at se to neptï¿½ 2ï¿½)
+  // Heslo se řeší až v admin.html (ať se to neptá 2×)
   openPopup("/admin.html");
 }
 

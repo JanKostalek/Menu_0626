@@ -419,6 +419,17 @@ hr {
   flex: 0 0 auto;
 }
 
+.day-scope-btn {
+  font-weight: 700;
+}
+
+.day-scope-btn.active {
+  background: linear-gradient(180deg, rgba(83, 242, 154, 0.3), rgba(92, 225, 230, 0.22));
+  border-color: rgba(125, 244, 186, 0.75);
+  color: #f5fffb;
+  box-shadow: 0 0 0 2px rgba(92, 225, 230, 0.15) inset;
+}
+
 .source-note {
   color: var(--muted);
   font-size: 13px;
