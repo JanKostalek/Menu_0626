@@ -340,7 +340,6 @@ function renderCategoryFilterBar() {
     const active = isCategoryFilterEnabled(key);
     return `
       <button type="button" class="type-filter-btn ${active ? "active" : ""}" data-cat-key="${escapeHtmlAttr(key)}">
-        <img class="type-filter-btn__icon" src="${escapeHtmlAttr(meta.icon)}" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'" />
         <span>${escapeHtml(meta.label)}</span>
       </button>
     `;
