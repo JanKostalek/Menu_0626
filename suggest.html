@@ -2,99 +2,197 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <title>Návrh restaurace</title>
+  <title>N&aacute;vrh restaurace</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    body { max-width: 900px; margin: 0 auto; }
-    .card { background:#fff; border:1px solid #ddd; padding:16px; border-radius:8px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; }
-    .row input { flex: 1 1 320px; padding:10px; }
-    .hint { color:#666; font-size:12px; margin-top:6px; }
-    .error { color:#b00020; font-size: 13px; margin-top: 10px; }
-    .ok { color:#0b7a0b; font-size: 13px; margin-top: 10px; }
+    .suggest-page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 18px 28px;
+    }
+
+    .suggest-header {
+      margin-bottom: 14px;
+    }
+
+    .suggest-title {
+      margin: 0;
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f1728;
+    }
+
+    .suggest-subtitle {
+      margin: 8px 0 0;
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 760px;
+    }
+
+    .suggest-card {
+      padding: 20px;
+      border-radius: 18px;
+    }
+
+    .suggest-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .suggest-input {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 16px;
+      color: #172033;
+    }
+
+    .suggest-input:focus {
+      outline: none;
+      border-color: #93b8ff;
+      box-shadow: 0 0 0 4px rgba(86, 140, 255, 0.14);
+    }
+
+    .suggest-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .suggest-btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #eff4fd 100%);
+      color: #111b2b;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .suggest-btn:hover {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .suggest-btn-primary {
+      background: linear-gradient(180deg, #49a87f 0%, #2e8f68 100%);
+      border-color: #2e8f68;
+      color: #fff;
+    }
+
+    .hint {
+      color: #5f6a7f;
+      font-size: 14px;
+      margin: 2px 0 12px;
+    }
+
+    .error {
+      color: #b21f3d;
+      font-size: 14px;
+      margin-top: 12px;
+      font-weight: 700;
+    }
+
+    .ok {
+      color: #18724f;
+      font-size: 14px;
+      margin-top: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .suggest-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
+  <main class="suggest-page">
+    <header class="suggest-header">
+      <h1 class="suggest-title">N&aacute;vrh restaurace</h1>
+      <p class="suggest-subtitle">
+        Vyplň prosím název restaurace a email. Ostatní údaje jsou volitelné.
+      </p>
+    </header>
 
-<h1>Návrh restaurace</h1>
+    <section class="card suggest-card">
+      <div class="suggest-grid">
+        <input id="name" class="suggest-input" type="text" placeholder="Název restaurace *" />
+        <input id="menuUrl" class="suggest-input" type="text" placeholder="Adresa jídelního lístku (URL)" />
+        <input id="submitter" class="suggest-input" type="text" placeholder="Zadavatel (jméno)" />
+        <input id="email" class="suggest-input" type="email" placeholder="Email kontakt *" />
+      </div>
 
-<div class="card">
-  <p class="hint">
-    Vyplň prosím název a email. Ostatní pole jsou volitelná.
-  </p>
+      <div class="suggest-actions">
+        <button class="suggest-btn suggest-btn-primary" onclick="submitSuggestion()">Odeslat návrh</button>
+        <button class="suggest-btn" onclick="window.close()">Zavřít</button>
+      </div>
 
-  <div class="row">
-    <input id="name" type="text" placeholder="Název restaurace *" />
-    <input id="menuUrl" type="text" placeholder="Adresa jídelního lístku (URL)" />
-  </div>
+      <div id="msg" class="hint"></div>
+    </section>
+  </main>
 
-  <div class="row">
-    <input id="submitter" type="text" placeholder="Zadavatel (jméno)" />
-    <input id="email" type="email" placeholder="Email kontakt *" />
-  </div>
-
-  <div class="row">
-    <button onclick="submitSuggestion()">Uložit</button>
-    <button onclick="window.close()">Zavřít</button>
-  </div>
-
-  <div id="msg" class="hint"></div>
-</div>
-
-<script>
-  function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
-  }
-
-  async function submitSuggestion() {
-    const name = document.getElementById("name").value.trim();
-    const menuUrl = document.getElementById("menuUrl").value.trim();
-    const submitter = document.getElementById("submitter").value.trim();
-    const email = document.getElementById("email").value.trim();
-
-    const msg = document.getElementById("msg");
-    msg.className = "error";
-    msg.textContent = "";
-
-    if (!name) {
-      msg.textContent = "Chybí název restaurace.";
-      return;
-    }
-    if (!email) {
-      msg.textContent = "Chybí email.";
-      return;
-    }
-    if (!isValidEmail(email)) {
-      msg.textContent = "Email nevypadá správně.";
-      return;
+  <script>
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
     }
 
-    msg.className = "hint";
-    msg.textContent = "Odesílám…";
+    async function submitSuggestion() {
+      const name = document.getElementById("name").value.trim();
+      const menuUrl = document.getElementById("menuUrl").value.trim();
+      const submitter = document.getElementById("submitter").value.trim();
+      const email = document.getElementById("email").value.trim();
 
-    const resp = await fetch("/api/suggestions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, menuUrl, submitter, email })
-    });
-
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
+      const msg = document.getElementById("msg");
       msg.className = "error";
-      msg.textContent = "Nepodařilo se uložit: " + (data.error || resp.status);
-      return;
+      msg.textContent = "";
+
+      if (!name) {
+        msg.textContent = "Chybí název restaurace.";
+        return;
+      }
+      if (!email) {
+        msg.textContent = "Chybí email.";
+        return;
+      }
+      if (!isValidEmail(email)) {
+        msg.textContent = "Email nevypadá správně.";
+        return;
+      }
+
+      msg.className = "hint";
+      msg.textContent = "Odesílám…";
+
+      const resp = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, menuUrl, submitter, email })
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        msg.className = "error";
+        msg.textContent = "Nepodařilo se uložit: " + (data.error || resp.status);
+        return;
+      }
+
+      msg.className = "ok";
+      msg.textContent = "Uloženo. Návrh se objeví v administraci.";
+
+      document.getElementById("name").value = "";
+      document.getElementById("menuUrl").value = "";
+      document.getElementById("submitter").value = "";
+      document.getElementById("email").value = "";
     }
-
-    msg.className = "ok";
-    msg.textContent = "Uloženo ✅ Návrh se objeví v administraci.";
-
-    // vyčistit formulář
-    document.getElementById("name").value = "";
-    document.getElementById("menuUrl").value = "";
-    document.getElementById("submitter").value = "";
-    document.getElementById("email").value = "";
-  }
-</script>
-
+  </script>
 </body>
 </html>
