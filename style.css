@@ -54,7 +54,7 @@
   background: #e6e6e6;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 21px;
   line-height: 1.1;
 }
 
@@ -89,6 +89,16 @@
 
 .top-bar button:hover {
   background: #dcdcdc;
+}
+
+.admin-icon-btn {
+  padding: 4px 10px !important;
+}
+
+.admin-icon-btn img {
+  display: block;
+  width: 92px;
+  height: auto;
 }
 
 /* ===== LAYOUT ===== */
@@ -373,7 +383,7 @@
   }
 
   .type-filter-btn {
-    font-size: 13px;
+    font-size: 17px;
     padding: 7px 10px;
   }
 
