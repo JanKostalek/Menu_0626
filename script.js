@@ -327,7 +327,7 @@ function renderCategoryFilterBar() {
 
   const allHtml = `
     <button type="button" class="${allBtnClass}" data-cat-all="1">
-      <span class="type-filter-btn__label">Všechny restaurace</span>
+      <span>Všechny restaurace</span>
     </button>
   `;
 
@@ -341,7 +341,7 @@ function renderCategoryFilterBar() {
     return `
       <button type="button" class="type-filter-btn ${active ? "active" : ""}" data-cat-key="${escapeHtmlAttr(key)}">
         <img class="type-filter-btn__icon" src="${escapeHtmlAttr(meta.icon)}" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'" />
-        <span class="type-filter-btn__label">${escapeHtml(meta.label)}</span>
+        <span>${escapeHtml(meta.label)}</span>
       </button>
     `;
   }).join("");

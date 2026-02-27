@@ -46,35 +46,21 @@
 }
 
 .type-filter-btn {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 46px;
-  padding: 8px 52px 8px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   border: 1px solid #bbb;
   background: #e6e6e6;
   border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
   line-height: 1.1;
-  overflow: hidden;
 }
 
 .type-filter-btn.active {
   background: #b9e4b9;
   border-color: #7ac77a;
-}
-
-.type-filter-btn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 42px;
-  height: 100%;
-  background: #fff;
-  border-left: 1px solid #d3d3d3;
-  pointer-events: none;
 }
 
 .top-bar .type-filter-btn:hover,
@@ -88,21 +74,10 @@
 }
 
 .type-filter-btn__icon {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
-  flex: 0 0 24px;
-  z-index: 1;
-}
-
-.type-filter-btn__label {
-  position: relative;
-  z-index: 1;
-  white-space: nowrap;
+  flex: 0 0 18px;
 }
 
 .top-bar button {
