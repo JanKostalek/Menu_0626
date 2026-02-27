@@ -498,8 +498,6 @@ function renderRestaurants(restaurants) {
               ${isEditing ? "" : "disabled"}
               onchange="pickName('${escapeHtmlAttr(r.id)}', this.value)"
             />
-            <span class="pill">${escapeHtml(currentMode)}</span>
-            <span class="pill">${escapeHtml(categoryLabel(currentCategory))}</span>
           </div>
 
           <input
