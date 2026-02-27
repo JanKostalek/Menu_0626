@@ -58,7 +58,7 @@
     }
     .recache-status{
       font-size: 12px;
-      color: #0b7a0b;
+      color: #89efbc;
       min-height: 16px;
       text-align: right;
     }
@@ -70,7 +70,8 @@
       margin: 6px 0;
       border: 1px solid var(--border-strong);
       border-radius: 12px;
-      background: #fff;
+      background: rgba(8, 14, 26, 0.45);
+      color: #eef4ff;
       font-size: 16px;
     }
 
@@ -79,20 +80,21 @@
       padding: 16px;
       margin-top: 14px;
       border-radius: 16px;
-      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      background: linear-gradient(160deg, rgba(16, 26, 45, 0.92), rgba(14, 23, 40, 0.86));
       box-shadow: var(--shadow-sm);
     }
 
     .list-item { display:flex; gap:10px; align-items:center; justify-content:space-between; }
     .list-left { min-width: 0; flex: 1 1 auto; }
-    .muted { color:#666; font-size: 12px; word-break: break-all; }
+    .muted { color:var(--muted); font-size: 12px; word-break: break-all; }
     .suggestion-note { white-space: pre-wrap; word-break: break-word; }
 
     .btn{
       min-height: 42px;
       padding: 8px 14px;
       border: 1px solid var(--border-strong);
-      background: linear-gradient(180deg, #ffffff 0%, #eff4fd 100%);
+      background: linear-gradient(180deg, rgba(34, 54, 95, 0.95), rgba(21, 35, 63, 0.95));
+      color: #edf4ff;
       cursor: pointer;
       border-radius: 11px;
       font-family: inherit;
@@ -139,20 +141,23 @@
       padding: 5px 10px;
       border-radius: 999px;
       border: 1px solid var(--border-strong);
-      background: #f1f5fc;
+      background: rgba(28, 43, 74, 0.95);
+      color: #ecf4ff;
       cursor:pointer;
       font-size: 12px;
       font-weight: 700;
     }
     .modeBtn.active{
-      background: #b9e4b9;
-      border-color: #7ac77a;
+      background: rgba(83, 242, 154, 0.28);
+      border-color: rgba(124, 243, 184, 0.82);
+      color: #f4fffb;
     }
     .catSelect{
       padding: 4px 8px;
       border: 1px solid var(--border-strong);
       border-radius: 8px;
-      background: #fff;
+      background: rgba(8, 14, 26, 0.45);
+      color: #eef4ff;
       font-size: 12px;
     }
 
@@ -173,7 +178,8 @@
       width: 26px;
       height: 22px;
       border: 1px solid var(--border-strong);
-      background: #f1f5fc;
+      background: rgba(28, 43, 74, 0.95);
+      color: #ecf4ff;
       border-radius: 6px;
       cursor: pointer;
       line-height: 1;
@@ -187,7 +193,8 @@
       min-width: 72px;
       min-height: 36px;
       border: 1px solid var(--border-strong);
-      background: #f1f5fc;
+      background: rgba(28, 43, 74, 0.95);
+      color: #ecf4ff;
       border-radius: 8px;
       cursor: pointer;
       font-size: 13px;
@@ -200,10 +207,10 @@
       min-height: 34px;
       border: 1px solid var(--border-strong);
       border-radius: 8px;
-      background: #fff;
+      background: rgba(8, 14, 26, 0.45);
       padding: 6px 10px;
       font-size: 14px;
-      color: #10203a;
+      color: #eef4ff;
       margin-bottom: 6px;
     }
     .editableInput[disabled]{
@@ -214,8 +221,8 @@
       min-height: 0;
       margin-bottom: 2px;
     }
-    .modeHintChanged{ color:#2d6cdf; font-weight:600; }
-    hr{ border:none; border-top:1px solid #ddd; margin: 12px 0; }
+    .modeHintChanged{ color:#97c3ff; font-weight:600; }
+    hr{ border:none; border-top:1px solid rgba(143, 166, 205, 0.28); margin: 12px 0; }
   </style>
 </head>
 <body>
