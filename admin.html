@@ -156,21 +156,64 @@
       font-size: 12px;
     }
 
-    .actionsRight{ display:flex; gap: 0px; align-items:center; }
-    .moveBtns{ display:flex; flex-direction:column; gap:6px; margin-right:8px; }
+    .actionsRight{ display:flex; gap: 8px; align-items:center; }
+    .nameRow{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:4px;
+    }
+    .nameMoveBtns{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      flex: 0 0 auto;
+    }
     .moveBtn{
-      width: 34px;
-      height: 30px;
+      width: 26px;
+      height: 22px;
       border: 1px solid var(--border-strong);
       background: #f1f5fc;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       line-height: 1;
-      font-size: 16px;
+      font-size: 12px;
+      font-weight: 700;
       padding: 0;
     }
     .moveBtn:hover{ box-shadow: var(--shadow-sm); }
     .moveBtn:disabled{ opacity:.45; cursor:default; }
+    .editBtn{
+      min-width: 72px;
+      min-height: 36px;
+      border: 1px solid var(--border-strong);
+      background: #f1f5fc;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0 10px;
+    }
+    .editBtn:hover{ box-shadow: var(--shadow-sm); }
+    .editableInput{
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px 10px;
+      font-size: 14px;
+      color: #10203a;
+      margin-bottom: 6px;
+    }
+    .editableInput[disabled]{
+      border-color: transparent;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      min-height: 0;
+      margin-bottom: 2px;
+    }
     .modeHintChanged{ color:#2d6cdf; font-weight:600; }
     hr{ border:none; border-top:1px solid #ddd; margin: 12px 0; }
   </style>
@@ -305,6 +348,11 @@ const pendingModeById = new Map();
 const currentModeById = new Map();
 const pendingCategoryById = new Map();
 const currentCategoryById = new Map();
+const pendingNameById = new Map();
+const currentNameById = new Map();
+const pendingUrlById = new Map();
+const currentUrlById = new Map();
+const editingIds = new Set();
 let restaurantsCache = [];
 let currentOrderIds = [];
 let pendingOrderIds = null;
@@ -339,7 +387,12 @@ function setRecacheStatus(msg) {
 }
 
 function updateSaveModesButton() {
-  const count = pendingModeById.size + pendingCategoryById.size + (pendingOrderIds ? 1 : 0);
+  const count =
+    pendingModeById.size +
+    pendingCategoryById.size +
+    pendingNameById.size +
+    pendingUrlById.size +
+    (pendingOrderIds ? 1 : 0);
   if (saveModesBtnEl) {
     saveModesBtnEl.textContent = `Uložit změny (${count})`;
     saveModesBtnEl.disabled = count === 0;
@@ -354,7 +407,13 @@ function updateSaveModesButton() {
 }
 
 function hasPendingChanges() {
-  return pendingModeById.size > 0 || pendingCategoryById.size > 0 || !!pendingOrderIds;
+  return (
+    pendingModeById.size > 0 ||
+    pendingCategoryById.size > 0 ||
+    pendingNameById.size > 0 ||
+    pendingUrlById.size > 0 ||
+    !!pendingOrderIds
+  );
 }
 
 function getDisplayRestaurants(baseList) {
@@ -406,7 +465,11 @@ function renderRestaurants(restaurants) {
     const pending = pendingModeById.has(r.id) ? pendingModeById.get(r.id) : currentMode;
     const currentCategory = normalizeCategory(r.category);
     const pendingCategory = pendingCategoryById.has(r.id) ? pendingCategoryById.get(r.id) : currentCategory;
-    const orderChanged = !!pendingOrderIds;
+    const currentName = currentNameById.get(r.id) ?? String(r.name || "");
+    const currentUrl = currentUrlById.get(r.id) ?? String(r.url || "");
+    const pendingName = pendingNameById.has(r.id) ? pendingNameById.get(r.id) : currentName;
+    const pendingUrl = pendingUrlById.has(r.id) ? pendingUrlById.get(r.id) : currentUrl;
+    const isEditing = editingIds.has(r.id);
 
     const parseActive = pending === "parse" ? "active" : "";
     const embedActive = pending === "embed" ? "active" : "";
@@ -415,17 +478,37 @@ function renderRestaurants(restaurants) {
     ).join("");
     const modeChanged = pending !== currentMode;
     const categoryChanged = pendingCategory !== currentCategory;
+    const nameChanged = pendingName !== currentName;
+    const urlChanged = pendingUrl !== currentUrl;
+    const orderChanged = !!pendingOrderIds;
+    const anyChanged = modeChanged || categoryChanged || nameChanged || urlChanged;
 
     return `
       <div class="list-item">
         <div class="list-left">
-          <div>
-            <b>${escapeHtml(r.name)}</b>
+          <div class="nameRow">
+            <div class="nameMoveBtns">
+              <button class="moveBtn" onclick="moveRestaurant('${escapeHtmlAttr(r.id)}', -1)" ${idx === 0 ? "disabled" : ""} title="Posunout nahoru">▲</button>
+              <button class="moveBtn" onclick="moveRestaurant('${escapeHtmlAttr(r.id)}', 1)" ${idx === displayRestaurants.length - 1 ? "disabled" : ""} title="Posunout dolů">▼</button>
+            </div>
+            <input
+              type="text"
+              class="editableInput"
+              value="${escapeHtmlAttr(pendingName)}"
+              ${isEditing ? "" : "disabled"}
+              onchange="pickName('${escapeHtmlAttr(r.id)}', this.value)"
+            />
             <span class="pill">${escapeHtml(currentMode)}</span>
             <span class="pill">${escapeHtml(categoryLabel(currentCategory))}</span>
           </div>
 
-          <div class="muted">${escapeHtml(r.url)}</div>
+          <input
+            type="text"
+            class="editableInput muted"
+            value="${escapeHtmlAttr(pendingUrl)}"
+            ${isEditing ? "" : "disabled"}
+            onchange="pickUrl('${escapeHtmlAttr(r.id)}', this.value)"
+          />
 
           <div class="modeBox">
             <span class="muted">Mode:</span>
@@ -436,18 +519,15 @@ function renderRestaurants(restaurants) {
               ${categoryOptionsHtml}
             </select>
             ${
-              (modeChanged || categoryChanged)
-                ? `<span class="muted modeHintChanged">${modeChanged && categoryChanged ? "Změna režimu + typu připravena" : (modeChanged ? "Změna režimu připravena" : "Změna typu připravena")}</span>`
-                : (orderChanged ? `<span class="muted">Pořadí změněno</span>` : `<span class="muted">Beze změny</span>`)
+              (anyChanged || orderChanged)
+                ? `<span class="muted modeHintChanged">Změna připravena</span>`
+                : `<span class="muted">Beze změny</span>`
             }
           </div>
         </div>
 
         <div class="actionsRight">
-          <div class="moveBtns">
-            <button class="moveBtn" onclick="moveRestaurant('${escapeHtmlAttr(r.id)}', -1)" ${idx === 0 ? "disabled" : ""} title="Posunout nahoru">▲</button>
-            <button class="moveBtn" onclick="moveRestaurant('${escapeHtmlAttr(r.id)}', 1)" ${idx === displayRestaurants.length - 1 ? "disabled" : ""} title="Posunout dolů">▼</button>
-          </div>
+          <button class="editBtn" onclick="toggleEdit('${escapeHtmlAttr(r.id)}')">${isEditing ? "HOTOVO" : "EDIT"}</button>
           <button class="danger" onclick="deleteRestaurant('${escapeHtmlAttr(r.id)}', '${escapeHtmlAttr(r.name)}')">Smazat</button>
         </div>
       </div>
@@ -503,9 +583,12 @@ async function loadRestaurants() {
 
     currentModeById.clear();
     currentCategoryById.clear();
+    currentNameById.clear();
+    currentUrlById.clear();
     restaurantsCache.forEach((r) => currentModeById.set(r.id, normalizeMode(r.mode)));
     restaurantsCache.forEach((r) => currentCategoryById.set(r.id, normalizeCategory(r.category)));
-
+    restaurantsCache.forEach((r) => currentNameById.set(r.id, String(r.name || "").trim()));
+    restaurantsCache.forEach((r) => currentUrlById.set(r.id, String(r.url || "").trim()));
     currentOrderIds = restaurantsCache.map((r) => r.id);
 
     if (pendingOrderIds) {
@@ -521,6 +604,15 @@ async function loadRestaurants() {
     }
     for (const k of Array.from(pendingCategoryById.keys())) {
       if (!ids.has(k)) pendingCategoryById.delete(k);
+    }
+    for (const k of Array.from(pendingNameById.keys())) {
+      if (!ids.has(k)) pendingNameById.delete(k);
+    }
+    for (const k of Array.from(pendingUrlById.keys())) {
+      if (!ids.has(k)) pendingUrlById.delete(k);
+    }
+    for (const k of Array.from(editingIds.values())) {
+      if (!ids.has(k)) editingIds.delete(k);
     }
 
     renderRestaurants(restaurantsCache);
@@ -588,6 +680,35 @@ function moveRestaurant(id, delta) {
   renderRestaurants(restaurantsCache);
 }
 
+function toggleEdit(id) {
+  if (!id) return;
+  if (editingIds.has(id)) editingIds.delete(id);
+  else editingIds.add(id);
+  renderRestaurants(restaurantsCache);
+}
+
+function pickName(id, value) {
+  const next = String(value || "").trim();
+  const current = String(currentNameById.get(id) || "").trim();
+
+  if (current === next) pendingNameById.delete(id);
+  else pendingNameById.set(id, next);
+
+  updateSaveModesButton();
+  renderRestaurants(restaurantsCache);
+}
+
+function pickUrl(id, value) {
+  const next = String(value || "").trim();
+  const current = String(currentUrlById.get(id) || "").trim();
+
+  if (current === next) pendingUrlById.delete(id);
+  else pendingUrlById.set(id, next);
+
+  updateSaveModesButton();
+  renderRestaurants(restaurantsCache);
+}
+
 function resetAllModeChanges() {
   if (!hasPendingChanges()) {
     setStatus("Není co vrátit.");
@@ -597,34 +718,48 @@ function resetAllModeChanges() {
 
   pendingModeById.clear();
   pendingCategoryById.clear();
+  pendingNameById.clear();
+  pendingUrlById.clear();
   pendingOrderIds = null;
+  editingIds.clear();
   setStatus("Neuložené změny byly zrušeny.");
   updateSaveModesButton();
   renderRestaurants(restaurantsCache);
 }
 
 async function saveAllModeChanges() {
-  const entries = Array.from(pendingModeById.entries());
-  const categoryEntries = Array.from(pendingCategoryById.entries());
+  const changedIds = new Set([
+    ...pendingModeById.keys(),
+    ...pendingCategoryById.keys(),
+    ...pendingNameById.keys(),
+    ...pendingUrlById.keys()
+  ]);
   const hasOrderChange = !!pendingOrderIds;
-  if (!entries.length && !categoryEntries.length && !hasOrderChange) {
+
+  if (!changedIds.size && !hasOrderChange) {
     setStatus("Není co uložit.");
     updateSaveModesButton();
     return;
   }
 
-  const totalChanges = entries.length + categoryEntries.length + (hasOrderChange ? 1 : 0);
+  const totalChanges = changedIds.size + (hasOrderChange ? 1 : 0);
   setStatus(`Ukládám ${totalChanges} změn(y)…`);
 
   let okCount = 0;
   let firstError = "";
 
-  for (const [id, mode] of entries) {
+  for (const id of changedIds) {
+    const payload = { action: "update", id };
+    if (pendingModeById.has(id)) payload.mode = pendingModeById.get(id);
+    if (pendingCategoryById.has(id)) payload.category = pendingCategoryById.get(id);
+    if (pendingNameById.has(id)) payload.name = pendingNameById.get(id);
+    if (pendingUrlById.has(id)) payload.url = pendingUrlById.get(id);
+
     try {
       const resp = await fetch("/api/restaurants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update", id, mode })
+        body: JSON.stringify(payload)
       });
 
       const data = await resp.json().catch(() => ({}));
@@ -634,27 +769,10 @@ async function saveAllModeChanges() {
       }
 
       pendingModeById.delete(id);
-      okCount++;
-    } catch (e) {
-      if (!firstError) firstError = String(e?.message || e);
-    }
-  }
-
-  for (const [id, category] of categoryEntries) {
-    try {
-      const resp = await fetch("/api/restaurants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update", id, category })
-      });
-
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        if (!firstError) firstError = data.error || String(resp.status);
-        continue;
-      }
-
       pendingCategoryById.delete(id);
+      pendingNameById.delete(id);
+      pendingUrlById.delete(id);
+      editingIds.delete(id);
       okCount++;
     } catch (e) {
       if (!firstError) firstError = String(e?.message || e);
@@ -742,7 +860,10 @@ async function deleteRestaurant(id, name) {
 
   pendingModeById.delete(id);
   pendingCategoryById.delete(id);
+  pendingNameById.delete(id);
+  pendingUrlById.delete(id);
   if (pendingOrderIds) pendingOrderIds = pendingOrderIds.filter((x) => x !== id);
+  editingIds.delete(id);
   updateSaveModesButton();
   clearLocalCacheOnly();
   await loadRestaurants();
