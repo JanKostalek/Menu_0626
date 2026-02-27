@@ -86,6 +86,7 @@
     .list-item { display:flex; gap:10px; align-items:center; justify-content:space-between; }
     .list-left { min-width: 0; flex: 1 1 auto; }
     .muted { color:#666; font-size: 12px; word-break: break-all; }
+    .suggestion-note { white-space: pre-wrap; word-break: break-word; }
 
     .btn{
       min-height: 42px;
@@ -468,7 +469,7 @@ function renderSuggestions(items) {
           <div><b>${escapeHtml(s.name)}</b></div>
           <div class="muted">${escapeHtml(addr)}</div>
           <div class="muted">Jméno: ${escapeHtml(who)} | Email: ${escapeHtml(s.email)}</div>
-          ${note ? `<div class="muted">Poznámka: ${escapeHtml(note)}</div>` : ""}
+          ${note ? `<div class="muted suggestion-note">Poznámka: ${escapeHtml(note)}</div>` : ""}
         </div>
         <div>
           <button class="danger" onclick="deleteSuggestion('${escapeHtmlAttr(s.id)}', '${escapeHtmlAttr(s.name)}')">Smazat</button>
