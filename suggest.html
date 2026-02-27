@@ -17,10 +17,9 @@
 
     .suggest-title {
       margin: 0;
-      font-size: clamp(32px, 5vw, 48px);
+      font-size: clamp(34px, 5vw, 54px);
       font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #0f1728;
+      text-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
 
     .suggest-subtitle {
@@ -42,21 +41,38 @@
       margin-bottom: 10px;
     }
 
-    .suggest-input {
+    .suggest-input,
+    .suggest-note {
       width: 100%;
       min-height: 48px;
       padding: 12px 14px;
       border: 1px solid var(--border-strong);
       border-radius: 12px;
-      background: #fff;
+      background: rgba(8, 14, 26, 0.45);
+      color: #f0f5ff;
       font-size: 16px;
-      color: #172033;
     }
 
-    .suggest-input:focus {
+    .suggest-note {
+      min-height: 108px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .suggest-input::placeholder,
+    .suggest-note::placeholder {
+      color: #9fb1d5;
+    }
+
+    .suggest-input:focus,
+    .suggest-note:focus {
       outline: none;
-      border-color: #93b8ff;
-      box-shadow: 0 0 0 4px rgba(86, 140, 255, 0.14);
+      border-color: rgba(92, 225, 230, 0.86);
+      box-shadow: 0 0 0 4px rgba(92, 225, 230, 0.16);
+    }
+
+    .suggest-note-wrap {
+      margin-bottom: 10px;
     }
 
     .suggest-actions {
@@ -71,8 +87,8 @@
       padding: 10px 16px;
       border: 1px solid var(--border-strong);
       border-radius: 12px;
-      background: linear-gradient(180deg, #ffffff 0%, #eff4fd 100%);
-      color: #111b2b;
+      background: linear-gradient(180deg, rgba(34, 54, 95, 0.95), rgba(21, 35, 63, 0.95));
+      color: #ecf4ff;
       font-weight: 700;
       cursor: pointer;
     }
@@ -83,26 +99,26 @@
     }
 
     .suggest-btn-primary {
-      background: linear-gradient(180deg, #49a87f 0%, #2e8f68 100%);
-      border-color: #2e8f68;
-      color: #fff;
+      background: linear-gradient(180deg, #53f29a 0%, #2ac17a 100%);
+      border-color: rgba(133, 255, 190, 0.8);
+      color: #062012;
     }
 
     .hint {
-      color: #5f6a7f;
+      color: var(--muted);
       font-size: 14px;
-      margin: 2px 0 12px;
+      margin: 4px 0 12px;
     }
 
     .error {
-      color: #b21f3d;
+      color: #ff8ca5;
       font-size: 14px;
       margin-top: 12px;
       font-weight: 700;
     }
 
     .ok {
-      color: #18724f;
+      color: #93f8c5;
       font-size: 14px;
       margin-top: 12px;
       font-weight: 700;
@@ -112,29 +128,6 @@
       .suggest-grid {
         grid-template-columns: 1fr;
       }
-    }
-
-    .suggest-note-wrap {
-      margin-bottom: 10px;
-    }
-
-    .suggest-note {
-      width: 100%;
-      min-height: 104px;
-      padding: 12px 14px;
-      border: 1px solid var(--border-strong);
-      border-radius: 12px;
-      background: #fff;
-      font-size: 16px;
-      color: #172033;
-      resize: vertical;
-      line-height: 1.4;
-    }
-
-    .suggest-note:focus {
-      outline: none;
-      border-color: #93b8ff;
-      box-shadow: 0 0 0 4px rgba(86, 140, 255, 0.14);
     }
   </style>
 </head>
