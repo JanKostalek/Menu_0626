@@ -649,15 +649,15 @@ function hasAnySelected() {
 function splitNameToTwoLines(name) {
   const words = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (words.length < 2) return null;
+  return words;
+}
 
-  let best = null;
-  for (let i = 1; i < words.length; i++) {
-    const left = words.slice(0, i).join(" ");
-    const right = words.slice(i).join(" ");
-    const score = Math.abs(left.length - right.length);
-    if (!best || score < best.score) best = { left, right, score };
-  }
-  return best ? [best.left, best.right] : null;
+function measureTextWidthPx(text, font) {
+  const canvas = measureTextWidthPx._canvas || (measureTextWidthPx._canvas = document.createElement("canvas"));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return 0;
+  ctx.font = font || "16px Arial";
+  return ctx.measureText(String(text || "")).width;
 }
 
 function fitRestaurantButtonLabels(container) {
@@ -668,13 +668,36 @@ function fitRestaurantButtonLabels(container) {
     const fullName = label.getAttribute("data-fullname") || label.textContent || "";
     label.textContent = fullName;
 
-    // Přeteče-li text do ikonové (bílé) části, rozdělíme název do 2 řádků.
-    if (label.scrollWidth <= label.clientWidth) return;
+    const words = splitNameToTwoLines(fullName);
+    if (!words) return;
 
-    const parts = splitNameToTwoLines(fullName);
-    if (!parts) return;
+    const cs = window.getComputedStyle(label);
+    const font = cs.font || `${cs.fontSize} ${cs.fontFamily}`;
+    const maxWidth = label.clientWidth;
+    if (!maxWidth) return;
 
-    label.innerHTML = `${escapeHtml(parts[0])}<br>${escapeHtml(parts[1])}`;
+    const fullWidth = measureTextWidthPx(fullName, font);
+    if (fullWidth <= maxWidth) return;
+
+    // Přeteče-li text do ikonové (bílé) části, rozdělíme název do 2 řádků
+    // podle reálně měřené šířky řádků.
+    let best = null;
+    for (let i = 1; i < words.length; i++) {
+      const left = words.slice(0, i).join(" ");
+      const right = words.slice(i).join(" ");
+      const w1 = measureTextWidthPx(left, font);
+      const w2 = measureTextWidthPx(right, font);
+      const overPenalty = Math.max(0, w1 - maxWidth) + Math.max(0, w2 - maxWidth);
+      const balance = Math.abs(w1 - w2);
+      const score = overPenalty * 1000 + balance;
+
+      if (!best || score < best.score) {
+        best = { left, right, score };
+      }
+    }
+
+    if (!best) return;
+    label.innerHTML = `${escapeHtml(best.left)}<br>${escapeHtml(best.right)}`;
   });
 }
 
@@ -959,3 +982,8 @@ function escapeHtmlAttr(str) { return escapeHtml(str); }
   await loadRestaurantsList();
   await loadMenus("today");
 })();
+
+window.addEventListener("resize", () => {
+  const container = document.getElementById("filterContainer");
+  fitRestaurantButtonLabels(container);
+});
